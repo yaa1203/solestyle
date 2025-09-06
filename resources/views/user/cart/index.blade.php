@@ -86,19 +86,30 @@
                             <div class="flex-grow min-w-0">
                                 <h4 class="font-semibold text-white text-lg truncate">{{ $item->product->name }}</h4>
                                 <p class="text-sm text-slate-400 mb-1">{{ $item->product->category->name ?? 'Uncategorized' }}</p>
-                                @if($item->size)
+                                
+                                <!-- Size Information -->
+                                @if($item->size_display && $item->size_display !== 'N/A')
                                     <div class="flex items-center mb-2">
                                         <i class="fas fa-shoe-prints text-purple-400 text-xs mr-2"></i>
-                                        <span class="text-sm text-slate-300">Ukuran: {{ $item->size }}</span>
+                                        <span class="text-sm text-slate-300">Ukuran: {{ $item->size_display }}</span>
+                                        @if(isset($item->size_stock))
+                                            <span class="text-xs text-slate-500 ml-2">(Stok: {{ $item->size_stock }})</span>
+                                        @endif
                                     </div>
                                 @endif
+                                
                                 <p class="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 text-lg">{{ $item->product->formatted_price }}</p>
                                 
-                                <!-- Stock info -->
-                                @if($item->product->stock <= 5)
+                                <!-- Stock warning -->
+                                @if(isset($item->size_stock) && $item->size_stock <= 5 && $item->size_stock > 0)
                                 <div class="flex items-center mt-2">
                                     <i class="fas fa-exclamation-triangle text-yellow-400 text-xs mr-1"></i>
-                                    <span class="text-yellow-400 text-xs">Stok terbatas: {{ $item->product->stock }} tersisa</span>
+                                    <span class="text-yellow-400 text-xs">Stok terbatas: {{ $item->size_stock }} tersisa</span>
+                                </div>
+                                @elseif(isset($item->size_stock) && $item->size_stock <= 0)
+                                <div class="flex items-center mt-2">
+                                    <i class="fas fa-times-circle text-red-400 text-xs mr-1"></i>
+                                    <span class="text-red-400 text-xs">Stok habis untuk ukuran ini</span>
                                 </div>
                                 @endif
                             </div>
@@ -111,14 +122,15 @@
                                     <i class="fas fa-minus text-xs"></i>
                                 </button>
                                 
-                                <input type="number" value="{{ $item->quantity }}" min="1" max="{{ $item->product->stock }}"
+                                <input type="number" value="{{ $item->quantity }}" min="1" 
+                                       max="{{ $item->size_stock ?? $item->product->stock }}"
                                        class="w-16 text-center bg-slate-700 border border-slate-600 rounded-lg py-2 text-white focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all" 
                                        onchange="updateQuantity({{ $item->id }}, this.value)"
                                        id="qty-{{ $item->id }}">
                                 
                                 <button onclick="updateQuantity({{ $item->id }}, {{ $item->quantity + 1 }})" 
                                         class="w-8 h-8 bg-slate-600 hover:bg-slate-500 rounded-lg flex items-center justify-center text-white transition-colors"
-                                        {{ $item->quantity >= $item->product->stock ? 'disabled' : '' }}>
+                                        {{ $item->quantity >= ($item->size_stock ?? $item->product->stock) ? 'disabled' : '' }}>
                                     <i class="fas fa-plus text-xs"></i>
                                 </button>
                             </div>
@@ -141,6 +153,16 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <!-- Warning if quantity exceeds stock -->
+                        @if($item->quantity > ($item->size_stock ?? $item->product->stock))
+                        <div class="mt-4 p-3 bg-red-900/20 border border-red-500/30 rounded-lg">
+                            <div class="flex items-center text-red-400">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <span class="text-sm">Quantity melebihi stok tersedia!</span>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                     @endforeach
                 </div>
@@ -175,7 +197,7 @@
             </div>
         </div>
         
-        <!-- Order Summary -->
+        <!-- Order Summary (sama seperti sebelumnya) -->
         <div class="lg:col-span-1">
             <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6 sticky top-24">
                 <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
@@ -449,7 +471,7 @@ function updateOrderSummary() {
         subtotal += price * quantity;
     });
     
-    const tax = Math.round(subtotal * 0.0001); // 10% tax
+    const tax = Math.round(subtotal * 0.0001); // 0.01% tax
     const total = subtotal + tax;
     
     // Update UI
@@ -920,13 +942,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize selection state
     updateSelection();
-    
-    // Auto-select first item (optional)
-    // const firstCheckbox = document.querySelector('.item-checkbox');
-    // if (firstCheckbox) {
-    //     firstCheckbox.checked = true;
-    //     updateSelection();
-    // }
 });
 
 // Keyboard shortcuts
@@ -948,10 +963,11 @@ document.addEventListener('keydown', function(e) {
 // Handle page visibility change
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
+        // Optionally refresh cart data when page becomes visible
     }
 });
 
-console.log('Cart page with selection initialized');
+console.log('Cart page with size support initialized');
 </script>
 
 @endsection

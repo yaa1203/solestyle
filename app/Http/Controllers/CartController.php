@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cart;
 use App\Models\Product;
+use App\Models\ProductSize;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -11,7 +12,7 @@ class CartController extends Controller
     // Tampilkan halaman keranjang
     public function index()
     {
-        $cartItems = Cart::with('product.category')
+        $cartItems = Cart::with(['product.category', 'productSize'])
             ->forCurrentUser()
             ->get();
 
@@ -20,6 +21,11 @@ class CartController extends Controller
             $item->product->formatted_price = 'Rp ' . number_format($item->product->price, 0, ',', '.');
             $item->formatted_subtotal = 'Rp ' . number_format($item->subtotal, 0, ',', '.');
             $item->product->image_url = $item->product->image ? asset('storage/' . $item->product->image) : null;
+            
+            // Set size information
+            $item->size_display = $item->productSize ? $item->productSize->size : ($item->size ?? 'N/A');
+            $item->size_stock = $item->productSize ? $item->productSize->stock : 0;
+            
             return $item;
         });
 
@@ -34,25 +40,37 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
-            'size' => 'nullable|integer'
+            'size_id' => 'required|exists:product_sizes,id',
+            'quantity' => 'required|integer|min:1'
         ]);
 
         $product = Product::findOrFail($request->product_id);
+        $productSize = ProductSize::where('id', $request->size_id)
+            ->where('product_id', $request->product_id)
+            ->firstOrFail();
 
         // Cek apakah produk aktif
         if ($product->status !== 'active') {
             return response()->json([
                 'success' => false,
                 'message' => 'Produk tidak tersedia'
-            ]);
+            ], 400);
+        }
+
+        // Cek stok ukuran
+        if ($productSize->stock < $request->quantity) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Stok tidak mencukupi. Tersedia: ' . $productSize->stock . ' item'
+            ], 400);
         }
 
         // Data cart
         $cartData = [
             'product_id' => $request->product_id,
-            'quantity' => $request->quantity,
-            'size' => $request->size
+            'size_id' => $request->size_id,
+            'size' => $productSize->size, // Simpan juga size string untuk backward compatibility
+            'quantity' => $request->quantity
         ];
 
         // Set user_id atau session_id
@@ -62,9 +80,9 @@ class CartController extends Controller
             $cartData['session_id'] = session()->getId();
         }
 
-        // Cari cart item yang sudah ada
+        // Cari cart item yang sudah ada (product + size yang sama)
         $existingCart = Cart::where('product_id', $request->product_id)
-            ->where('size', $request->size);
+            ->where('size_id', $request->size_id);
 
         if (auth()->check()) {
             $existingCart->where('user_id', auth()->id());
@@ -75,12 +93,24 @@ class CartController extends Controller
         $existingCart = $existingCart->first();
 
         if ($existingCart) {
+            // Cek total quantity setelah ditambah
+            $newQuantity = $existingCart->quantity + $request->quantity;
+            if ($newQuantity > $productSize->stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Total quantity melebihi stok. Stok tersedia: ' . $productSize->stock . ', sudah di cart: ' . $existingCart->quantity
+                ], 400);
+            }
+
             // Update quantity
-            $existingCart->quantity += $request->quantity;
+            $existingCart->quantity = $newQuantity;
             $existingCart->save();
+            
+            $message = 'Quantity produk di keranjang berhasil diperbarui';
         } else {
             // Buat cart baru
             Cart::create($cartData);
+            $message = 'Produk berhasil ditambahkan ke keranjang';
         }
 
         // Hitung total items di cart
@@ -88,7 +118,7 @@ class CartController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Produk berhasil ditambahkan ke keranjang',
+            'message' => $message,
             'cart_count' => $cartCount
         ]);
     }
@@ -100,10 +130,28 @@ class CartController extends Controller
             'quantity' => 'required|integer|min:1'
         ]);
 
-        $cartItem = Cart::forCurrentUser()->findOrFail($id);
+        $cartItem = Cart::with(['product', 'productSize'])->forCurrentUser()->findOrFail($id);
+        
+        // Cek stok jika ada size_id
+        if ($cartItem->size_id && $cartItem->productSize) {
+            if ($request->quantity > $cartItem->productSize->stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Quantity melebihi stok. Stok tersedia: ' . $cartItem->productSize->stock
+                ], 400);
+            }
+        } else {
+            // Fallback jika tidak ada size_id, cek stok produk
+            if ($request->quantity > $cartItem->product->stock) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Quantity melebihi stok. Stok tersedia: ' . $cartItem->product->stock
+                ], 400);
+            }
+        }
+
         $cartItem->update(['quantity' => $request->quantity]);
 
-        $cartItem->load('product');
         $subtotal = $cartItem->product->price * $cartItem->quantity;
         
         // Hitung total keseluruhan

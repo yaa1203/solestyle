@@ -203,34 +203,41 @@
             <input type="checkbox" class="product-checkbox rounded bg-slate-700 border-slate-600" 
                    value="{{ $product->id }}" onchange="updateBulkActions()">
           </td>
-          <td class="py-4">
-            <div class="flex items-center gap-3">
-              <!-- Gunakan gambar utama -->
-              @if($product->primary_image && Storage::disk('public')->exists($product->primary_image->path))
-                <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" 
-                    class="w-12 h-12 object-cover rounded-xl"
-                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center" style="display: none;">
-                  <i class="fas fa-image text-slate-500"></i>
+          <!-- Perbaikan untuk bagian gambar produk di tabel -->
+            <td class="py-4">
+              <div class="flex items-center gap-3">
+                @php
+                  $imageUrl = null;
+                  
+                  // Prioritas: primary_image -> image utama -> default
+                  if ($product->primary_image && Storage::disk('public')->exists($product->primary_image->path)) {
+                    $imageUrl = Storage::url($product->primary_image->path);
+                  } elseif (!empty($product->image) && Storage::disk('public')->exists($product->image)) {
+                    $imageUrl = Storage::url($product->image);
+                  }
+                @endphp
+                
+                @if($imageUrl)
+                  <img src="{{ $imageUrl }}" 
+                      alt="{{ $product->name }}" 
+                      class="w-12 h-12 object-cover rounded-xl border border-slate-600"
+                      loading="lazy"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center border border-slate-600" style="display: none;">
+                    <i class="fas fa-image text-slate-500"></i>
+                  </div>
+                @else
+                  <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center border border-slate-600">
+                    <i class="fas fa-image text-slate-500"></i>
+                  </div>
+                @endif
+                
+                <div>
+                  <div class="font-semibold">{{ $product->name }}</div>
+                  <div class="text-slate-400 text-sm">SKU: {{ $product->sku }}</div>
                 </div>
-              @elseif($product->image && Storage::disk('public')->exists($product->image))
-                <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" 
-                    class="w-12 h-12 object-cover rounded-xl"
-                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center" style="display: none;">
-                  <i class="fas fa-image text-slate-500"></i>
-                </div>
-              @else
-                <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center">
-                  <i class="fas fa-image text-slate-500"></i>
-                </div>
-              @endif
-              <div>
-                <div class="font-semibold">{{ $product->name }}</div>
-                <div class="text-slate-400 text-sm">SKU: {{ $product->sku }}</div>
               </div>
-            </div>
-          </td>
+            </td>
           <td class="py-4">
             @if($product->category)
               <span class="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-lg text-sm">

@@ -36,16 +36,15 @@
     color: #f1f5f9 !important;
     border: 1px solid rgba(148, 163, 184, 0.1) !important;
   }
-  .image-preview-item {
+  .image-preview-container {
     position: relative;
     border-radius: 0.75rem;
     overflow: hidden;
     background-color: #374151;
-    aspect-ratio: 1;
   }
-  .image-preview-item img {
+  .image-preview-container img {
     width: 100%;
-    height: 100%;
+    height: 200px;
     object-fit: cover;
   }
   .image-remove-btn {
@@ -68,17 +67,6 @@
   .image-remove-btn:hover {
     background: rgba(239, 68, 68, 1);
     transform: scale(1.1);
-  }
-  .image-primary-badge {
-    position: absolute;
-    bottom: 0.5rem;
-    left: 0.5rem;
-    background: rgba(139, 92, 246, 0.9);
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 0.375rem;
-    font-size: 0.75rem;
-    font-weight: 600;
   }
   .custom-select select {
     appearance: none;
@@ -146,27 +134,30 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Left Column -->
       <div class="space-y-6">
-        <!-- Product Images -->
+        <!-- Product Image -->
         <div>
-          <label class="block text-sm font-medium mb-2">Gambar Produk <span class="text-slate-400">(Maksimal 5 gambar)</span></label>
+          <label class="block text-sm font-medium mb-2">Gambar Produk</label>
           
           <!-- Image Upload Area -->
-          <div class="product-image-preview" onclick="document.getElementById('image-input').click()">
+          <div id="image-upload-area" class="product-image-preview" onclick="document.getElementById('image-input').click()">
             <div class="text-center">
-              <i class="fas fa-images text-4xl mb-2"></i>
+              <i class="fas fa-image text-4xl mb-2"></i>
               <p class="text-sm">Klik untuk pilih gambar</p>
-              <p class="text-xs text-slate-500">JPG, PNG, WebP (Max: 2MB per gambar)</p>
+              <p class="text-xs text-slate-500">JPG, PNG, WebP (Max: 2MB)</p>
             </div>
           </div>
-          <input type="file" id="image-input" name="images[]" accept="image/*" class="file-input" multiple onchange="previewImages(this)">
           
-          <!-- Image Preview Grid -->
-          <div id="image-preview-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 hidden">
-            <!-- Preview images will be inserted here -->
+          <!-- Image Preview -->
+          <div id="image-preview" class="image-preview-container hidden">
+            <img id="preview-image" src="" alt="Preview">
+            <button type="button" class="image-remove-btn" onclick="removeImage()">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
           
-          @error('images') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-          @error('images.*') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+          <input type="file" id="image-input" name="image" accept="image/*" class="file-input" onchange="previewImage(this)">
+          
+          @error('image') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
         <!-- Product Name -->
@@ -241,10 +232,10 @@
             <select name="status" 
                     class="w-full bg-slate-800/50 border border-slate-600 rounded-xl pl-12 pr-4 py-3 focus:border-purple-500 focus:outline-none text-slate-200">
               <option value="active" {{ old('status') == 'active' ? 'selected' : '' }} class="bg-slate-800 text-slate-200">
-                <i class="fas fa-check"></i> Aktif
+                Aktif
               </option>
               <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }} class="bg-slate-800 text-slate-200">
-                <i class="fas fa-times"></i> Tidak Aktif
+                Tidak Aktif
               </option>
             </select>
           </div>
@@ -253,33 +244,31 @@
       </div>
     </div>
 
-    <!-- Di dalam form, tambahkan bagian ukuran sepatu -->
-<!-- Di dalam form, tambahkan bagian ukuran sepatu -->
-<div class="mb-6">
-  <h3 class="text-lg font-semibold mb-4">Ukuran Sepatu</h3>
-  
-  <div id="sizes-container" class="space-y-3">
-    <!-- Size input akan ditambahkan di sini -->
-    <div class="size-input-row flex items-center gap-2">
-      <input type="text" name="sizes[0][size]" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
-             class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
-             required>
-      <input type="number" name="sizes[0][stock]" placeholder="Stok" min="0"
-             class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
-             required>
-      <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
-        <i class="fas fa-trash"></i>
+    <!-- Ukuran Sepatu -->
+    <div class="mt-6">
+      <h3 class="text-lg font-semibold mb-4">Ukuran Sepatu</h3>
+      
+      <div id="sizes-container" class="space-y-3">
+        <div class="size-input-row flex items-center gap-2">
+          <input type="text" name="sizes[0][size]" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
+                 class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+                 required>
+          <input type="number" name="sizes[0][stock]" placeholder="Stok" min="0"
+                 class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+                 required>
+          <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      
+      <button type="button" onclick="addSize()" class="mt-3 text-purple-400 hover:text-purple-300 flex items-center gap-2">
+        <i class="fas fa-plus"></i>
+        <span>Tambah Ukuran</span>
       </button>
+      
+      <p class="text-xs text-slate-400 mt-2">Tambahkan setidaknya satu ukuran untuk produk ini</p>
     </div>
-  </div>
-  
-  <button type="button" onclick="addSize()" class="mt-3 text-purple-400 hover:text-purple-300 flex items-center gap-2">
-    <i class="fas fa-plus"></i>
-    <span>Tambah Ukuran</span>
-  </button>
-  
-  <p class="text-xs text-slate-400 mt-2">Tambahkan setidaknya satu ukuran untuk produk ini</p>
-</div>
 
     <!-- Description -->
     <div class="mt-6">
@@ -314,13 +303,40 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 
+// Single image preview functionality
+function previewImage(input) {
+  const file = input.files[0];
+  const uploadArea = document.getElementById('image-upload-area');
+  const previewContainer = document.getElementById('image-preview');
+  const previewImage = document.getElementById('preview-image');
+  
+  if (file && file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      previewImage.src = e.target.result;
+      uploadArea.classList.add('hidden');
+      previewContainer.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeImage() {
+  const uploadArea = document.getElementById('image-upload-area');
+  const previewContainer = document.getElementById('image-preview');
+  const imageInput = document.getElementById('image-input');
+  
+  uploadArea.classList.remove('hidden');
+  previewContainer.classList.add('hidden');
+  imageInput.value = '';
+}
+
 // Fungsi untuk menambahkan input ukuran baru
-let sizeIndex = 1; // Mulai dari 1 karena sudah ada satu input default
+let sizeIndex = 1;
 
 function addSize() {
   const container = document.getElementById('sizes-container');
   
-  // Batasi maksimal 10 ukuran
   if (sizeIndex >= 10) {
     Swal.fire({
       title: 'Batas Maksimal Tercapai',
@@ -349,11 +365,9 @@ function addSize() {
   sizeIndex++;
 }
 
-// Fungsi untuk menghapus input ukuran
 function removeSize(button) {
   const container = document.getElementById('sizes-container');
   
-  // Pastikan setidaknya satu input ukuran tersisa
   if (container.children.length <= 1) {
     Swal.fire({
       title: 'Tidak Dapat Menghapus',
@@ -365,12 +379,9 @@ function removeSize(button) {
   }
   
   button.parentElement.remove();
-  
-  // Update indeks untuk semua input yang tersisa
   updateSizeIndices();
 }
 
-// Fungsi untuk memperbarui indeks input ukuran
 function updateSizeIndices() {
   const container = document.getElementById('sizes-container');
   const rows = container.querySelectorAll('.size-input-row');
@@ -381,192 +392,7 @@ function updateSizeIndices() {
     inputs[1].name = `sizes[${index}][stock]`;
   });
   
-  // Update global sizeIndex
   sizeIndex = rows.length;
-}
-
-// Validasi form sebelum submit
-document.getElementById('product-form').addEventListener('submit', function(e) {
-  // Validasi ukuran
-  const sizeRows = document.querySelectorAll('.size-input-row');
-  let hasValidSize = false;
-  
-  sizeRows.forEach(row => {
-    const sizeInput = row.querySelector('input[name*="[size]"]');
-    const stockInput = row.querySelector('input[name*="[stock]"]');
-    
-    if (sizeInput.value.trim() && stockInput.value && parseInt(stockInput.value) >= 0) {
-      hasValidSize = true;
-    }
-  });
-  
-  if (!hasValidSize) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Ukuran Tidak Valid',
-      text: 'Pastikan Anda telah memasukkan setidaknya satu ukuran dengan stok yang valid!',
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
-  
-  // Validasi lainnya...
-  const name = document.querySelector('input[name="name"]').value;
-  const price = parseIDR(document.querySelector('#price-input').value);
-  const stock = document.querySelector('input[name="stock"]').value;
-  const category = document.querySelector('select[name="category_id"]').value;
-  
-  if (!name || !price || !stock || !category) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Form Tidak Lengkap',
-      text: 'Mohon lengkapi semua field yang wajib diisi!',
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
-  
-  if (price <= 0) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Harga Tidak Valid',
-      text: 'Harga produk harus lebih dari 0!',
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
-  
-  if (parseInt(stock) < 0) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Stok Tidak Valid',
-      text: 'Stok produk tidak boleh negatif!',
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
-});
-
-// Auto hide alerts
-setTimeout(() => {
-  const alerts = document.querySelectorAll('#success-alert, #error-alert');
-  alerts.forEach(alert => {
-    alert.style.opacity = '0';
-    setTimeout(() => alert.remove(), 300);
-  });
-}, 5000);
-
-// Multiple images preview functionality
-let selectedImages = [];
-let imageCounter = 0;
-
-function previewImages(input) {
-  const files = Array.from(input.files);
-  const maxImages = 5;
-  
-  // Check if adding new images would exceed limit
-  if (selectedImages.length + files.length > maxImages) {
-    Swal.fire({
-      title: 'Batas Maksimal Tercapai',
-      text: `Anda hanya dapat mengunggah maksimal ${maxImages} gambar!`,
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
-  
-  files.forEach(file => {
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const imageId = 'img-' + (++imageCounter);
-        selectedImages.push({
-          id: imageId,
-          file: file,
-          url: e.target.result,
-          isPrimary: selectedImages.length === 0
-        });
-        
-        updateImagePreview();
-      };
-      reader.readAsDataURL(file);
-    }
-  });
-  
-  // Clear input for next selection
-  input.value = '';
-}
-
-function updateImagePreview() {
-  const grid = document.getElementById('image-preview-grid');
-  const uploadArea = document.querySelector('.product-image-preview');
-  
-  if (selectedImages.length > 0) {
-    grid.classList.remove('hidden');
-    uploadArea.style.display = 'none';
-    
-    grid.innerHTML = selectedImages.map((img, index) => `
-      <div class="image-preview-item">
-        <img src="${img.url}" alt="Preview ${index + 1}">
-        <button type="button" class="image-remove-btn" onclick="removeImage('${img.id}')">
-          <i class="fas fa-times"></i>
-        </button>
-        ${img.isPrimary ? '<div class="image-primary-badge">Utama</div>' : ''}
-        ${!img.isPrimary ? `<button type="button" class="absolute bottom-2 right-2 bg-purple-600/80 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs transition-all" onclick="setPrimaryImage('${img.id}')">Set Utama</button>` : ''}
-      </div>
-    `).join('');
-  } else {
-    grid.classList.add('hidden');
-    uploadArea.style.display = 'flex';
-  }
-  
-  updateFormData();
-}
-
-function removeImage(imageId) {
-  selectedImages = selectedImages.filter(img => img.id !== imageId);
-  
-  // If we removed the primary image, make the first remaining image primary
-  if (selectedImages.length > 0 && !selectedImages.some(img => img.isPrimary)) {
-    selectedImages[0].isPrimary = true;
-  }
-  
-  updateImagePreview();
-}
-
-function setPrimaryImage(imageId) {
-  selectedImages.forEach(img => {
-    img.isPrimary = img.id === imageId;
-  });
-  updateImagePreview();
-}
-
-function updateFormData() {
-  // Remove existing hidden inputs
-  document.querySelectorAll('input[name="images[]"]').forEach(input => {
-    if (input.type === 'hidden') input.remove();
-  });
-  
-  // Create DataTransfer object to set files
-  const dt = new DataTransfer();
-  
-  // Sort images so primary image is first
-  const sortedImages = [...selectedImages].sort((a, b) => {
-    if (a.isPrimary) return -1;
-    if (b.isPrimary) return 1;
-    return 0;
-  });
-  
-  sortedImages.forEach(img => {
-    dt.items.add(img.file);
-  });
-  
-  // Update the file input
-  document.getElementById('image-input').files = dt.files;
 }
 
 // Auto-generate SKU from product name
@@ -577,16 +403,12 @@ document.querySelector('input[name="name"]').addEventListener('input', function(
   if (!skuField.value || skuField.dataset.autoGenerated === 'true') {
     const productName = this.value.trim();
     if (productName.length >= 3) {
-      // Get first 3 characters and convert to uppercase
       const prefix = productName.substring(0, 3).toUpperCase();
-      // Generate sequential number with leading zeros
       const number = String(skuCounter).padStart(3, '0');
       const sku = `${prefix}-${number}`;
       
       skuField.value = sku;
       skuField.dataset.autoGenerated = 'true';
-      
-      // Increment counter for next product
       skuCounter++;
     } else {
       skuField.value = '';
@@ -595,7 +417,6 @@ document.querySelector('input[name="name"]').addEventListener('input', function(
   }
 });
 
-// Allow manual SKU editing
 document.querySelector('input[name="sku"]').addEventListener('input', function() {
   this.dataset.autoGenerated = 'false';
 });
@@ -623,20 +444,16 @@ priceInput.addEventListener('input', function(e) {
   
   isFormatting = true;
   
-  // Get cursor position
   const cursorPosition = e.target.selectionStart;
   const oldValue = e.target.value;
   
-  // Remove all non-numeric characters
   let numericValue = oldValue.replace(/[^\d]/g, '');
   
-  // Convert to number and format
   if (numericValue) {
     const number = parseInt(numericValue);
     const formatted = formatIDR(number);
     e.target.value = formatted;
     
-    // Adjust cursor position
     const newCursorPosition = cursorPosition + (formatted.length - oldValue.length);
     setTimeout(() => {
       e.target.setSelectionRange(newCursorPosition, newCursorPosition);
@@ -646,8 +463,9 @@ priceInput.addEventListener('input', function(e) {
   isFormatting = false;
 });
 
-// On form submit, convert formatted price back to numeric value
+// Form validation and submission
 document.getElementById('product-form').addEventListener('submit', function(e) {
+  // Convert formatted price back to numeric value
   const priceFormatted = priceInput.value;
   const priceNumeric = parseIDR(priceFormatted);
   
@@ -657,21 +475,38 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
   hiddenPriceInput.name = 'price';
   hiddenPriceInput.value = priceNumeric;
   
-  // Remove name from visible input to avoid conflict
   priceInput.removeAttribute('name');
-  
-  // Add hidden input to form
   this.appendChild(hiddenPriceInput);
-});
 
-// Form validation
-document.getElementById('product-form').addEventListener('submit', function(e) {
+  // Validate sizes
+  const sizeRows = document.querySelectorAll('.size-input-row');
+  let hasValidSize = false;
+  
+  sizeRows.forEach(row => {
+    const sizeInput = row.querySelector('input[name*="[size]"]');
+    const stockInput = row.querySelector('input[name*="[stock]"]');
+    
+    if (sizeInput.value.trim() && stockInput.value && parseInt(stockInput.value) >= 0) {
+      hasValidSize = true;
+    }
+  });
+  
+  if (!hasValidSize) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Ukuran Tidak Valid',
+      text: 'Pastikan Anda telah memasukkan setidaknya satu ukuran dengan stok yang valid!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+
+  // Basic validation
   const name = document.querySelector('input[name="name"]').value;
-  const price = parseIDR(document.querySelector('#price-input').value);
-  const stock = document.querySelector('input[name="stock"]').value;
   const category = document.querySelector('select[name="category_id"]').value;
 
-  if (!name || !price || !stock || !category) {
+  if (!name || !priceNumeric || !category) {
     e.preventDefault();
     Swal.fire({
       title: 'Form Tidak Lengkap',
@@ -682,7 +517,7 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
     return;
   }
 
-  if (price <= 0) {
+  if (priceNumeric <= 0) {
     e.preventDefault();
     Swal.fire({
       title: 'Harga Tidak Valid',
@@ -692,40 +527,26 @@ document.getElementById('product-form').addEventListener('submit', function(e) {
     });
     return;
   }
-
-  if (parseInt(stock) < 0) {
-    e.preventDefault();
-    Swal.fire({
-      title: 'Stok Tidak Valid',
-      text: 'Stok produk tidak boleh negatif!',
-      icon: 'warning',
-      confirmButtonColor: '#8b5cf6'
-    });
-    return;
-  }
 });
 
-// Drag and drop functionality for multiple images
-const imagePreview = document.querySelector('.product-image-preview');
+// Drag and drop functionality for single image
+const imageUploadArea = document.getElementById('image-upload-area');
 const imageInput = document.getElementById('image-input');
 
-// Prevent default drag behaviors
 ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-  imagePreview.addEventListener(eventName, preventDefaults, false);
+  imageUploadArea.addEventListener(eventName, preventDefaults, false);
   document.body.addEventListener(eventName, preventDefaults, false);
 });
 
-// Highlight drop area when item is dragged over it
 ['dragenter', 'dragover'].forEach(eventName => {
-  imagePreview.addEventListener(eventName, highlight, false);
+  imageUploadArea.addEventListener(eventName, highlight, false);
 });
 
 ['dragleave', 'drop'].forEach(eventName => {
-  imagePreview.addEventListener(eventName, unhighlight, false);
+  imageUploadArea.addEventListener(eventName, unhighlight, false);
 });
 
-// Handle dropped files
-imagePreview.addEventListener('drop', handleDrop, false);
+imageUploadArea.addEventListener('drop', handleDrop, false);
 
 function preventDefaults(e) {
   e.preventDefault();
@@ -733,38 +554,38 @@ function preventDefaults(e) {
 }
 
 function highlight(e) {
-  if (selectedImages.length === 0) {
-    imagePreview.style.borderColor = '#8b5cf6';
-    imagePreview.style.backgroundColor = '#4c1d95';
-  }
+  imageUploadArea.style.borderColor = '#8b5cf6';
+  imageUploadArea.style.backgroundColor = '#4c1d95';
 }
 
 function unhighlight(e) {
-  if (selectedImages.length === 0) {
-    imagePreview.style.borderColor = '#4b5563';
-    imagePreview.style.backgroundColor = '#374151';
-  }
+  imageUploadArea.style.borderColor = '#4b5563';
+  imageUploadArea.style.backgroundColor = '#374151';
 }
 
 function handleDrop(e) {
   const dt = e.dataTransfer;
   const files = dt.files;
   
-  if (files.length > 0 && selectedImages.length < 5) {
-    // Create a new input event to simulate file selection
-    const fileArray = Array.from(files);
-    const validFiles = fileArray.filter(file => file.type.startsWith('image/'));
-    
-    if (validFiles.length > 0) {
-      // Create new DataTransfer object
+  if (files.length > 0) {
+    const file = files[0];
+    if (file.type.startsWith('image/')) {
       const newDt = new DataTransfer();
-      validFiles.forEach(file => newDt.items.add(file));
-      
+      newDt.items.add(file);
       imageInput.files = newDt.files;
-      previewImages(imageInput);
+      previewImage(imageInput);
     }
   }
 }
+
+// Auto hide alerts
+setTimeout(() => {
+  const alerts = document.querySelectorAll('#success-alert, #error-alert');
+  alerts.forEach(alert => {
+    alert.style.opacity = '0';
+    setTimeout(() => alert.remove(), 300);
+  });
+}, 5000);
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -773,8 +594,6 @@ document.addEventListener('DOMContentLoaded', function() {
     priceInput.value = formatIDR(parseInt(priceValue));
   }
   
-  // Initialize SKU counter by checking existing products (you may want to get this from backend)
-  // For now, we'll start from 1, but in real application, you should get the last SKU number from database
   skuCounter = 1;
 });
 </script>
