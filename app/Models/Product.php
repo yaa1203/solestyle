@@ -29,6 +29,53 @@ class Product extends Model
         'updated_at' => 'datetime'
     ];
 
+    public function images()
+    {
+        return $this->hasMany(ProductImage::class);
+    }
+    
+    // Accessor untuk gambar utama
+    public function getPrimaryImageAttribute()
+    {
+        // Cari gambar utama di tabel product_images
+        $primaryImage = $this->images()->where('is_primary', true)->first();
+        
+        if ($primaryImage) {
+            return $primaryImage;
+        }
+        
+        // Jika tidak ada, gunakan gambar dari tabel products
+        if ($this->image && Storage::disk('public')->exists($this->image)) {
+            return (object)[
+                'path' => $this->image,
+                'is_primary' => true
+            ];
+        }
+        
+        return null;
+    }
+    
+    // Accessor untuk URL gambar utama
+    public function getPrimaryImageUrlAttribute()
+    {
+        if ($this->primary_image) {
+            return asset('storage/' . $this->primary_image->path);
+        }
+        
+        return asset('images/product-placeholder.png'); // fallback image
+    }
+
+    // Di Model Product, tambahkan accessor
+    public function getTotalStockAttribute()
+    {
+        return $this->sizes->sum('stock');
+    }
+
+    public function sizes()
+    {
+        return $this->hasMany(ProductSize::class);
+    }
+
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');

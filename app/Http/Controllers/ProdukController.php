@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Product;
+use App\Models\ProductSize;
 use App\Models\Category; // Tambahkan import Category model
 use Illuminate\Http\Request;
 
@@ -13,9 +14,9 @@ class ProdukController extends Controller
      */
     public function index(Request $request)
     {
-        // Query dengan relasi kategori
-        $query = Product::with('category')->where('status', 'active');
-
+        // Query dengan relasi kategori dan ukuran
+        $query = Product::with(['category', 'sizes'])->where('status', 'active');
+        
         // Filter berdasarkan pencarian
         if ($request->filled('search')) {
             $search = $request->search;
@@ -26,14 +27,21 @@ class ProdukController extends Controller
                   });
             });
         }
-
-        // Filter berdasarkan kategori (menggunakan nama kategori bukan ID)
+        
+        // Filter berdasarkan kategori
         if ($request->filled('category') && is_array($request->category)) {
             $query->whereHas('category', function($categoryQuery) use ($request) {
                 $categoryQuery->whereIn('name', $request->category);
             });
         }
-
+        
+        // Filter berdasarkan ukuran
+        if ($request->filled('size') && is_array($request->size)) {
+            $query->whereHas('sizes', function($sizeQuery) use ($request) {
+                $sizeQuery->whereIn('size', $request->size);
+            });
+        }
+        
         // Filter berdasarkan harga
         if ($request->filled('price_range')) {
             switch ($request->price_range) {
@@ -51,17 +59,7 @@ class ProdukController extends Controller
                     break;
             }
         }
-
-        // Filter berdasarkan ukuran jika ada
-        if ($request->filled('size') && is_array($request->size)) {
-            // Asumsi ada relasi atau field sizes di tabel products
-            $query->where(function($q) use ($request) {
-                foreach ($request->size as $size) {
-                    $q->orWhere('sizes', 'like', "%{$size}%");
-                }
-            });
-        }
-
+        
         // Sorting
         $sortBy = $request->get('sort', 'popular');
         switch ($sortBy) {
@@ -78,25 +76,29 @@ class ProdukController extends Controller
                 $query->orderBy('created_at', 'desc');
                 break;
             case 'rating':
-                $query->orderBy('rating', 'desc'); // Jika ada field rating
+                $query->orderBy('rating', 'desc');
                 break;
             default: // popular
                 $query->orderBy('created_at', 'desc');
                 break;
         }
-
+        
         // Pagination
         $products = $query->paginate(12)->withQueryString();
-
+        
         // Transform products untuk menambahkan data yang dibutuhkan view
         $products->getCollection()->transform(function ($product) {
             $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
             $product->image_exists = !empty($product->image);
             $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : null;
             $product->category_name = $product->category ? $product->category->name : 'Uncategorized';
+            $product->total_stock = $product->sizes->sum('stock');
+            $product->available_sizes = $product->sizes->filter(function ($size) {
+                return $size->stock > 0;
+            })->pluck('size');
             return $product;
         });
-
+        
         // Data untuk filter - ambil nama kategori yang unik
         $categories = Category::whereHas('products', function($query) {
                 $query->where('status', 'active');
@@ -104,8 +106,19 @@ class ProdukController extends Controller
             ->orderBy('name')
             ->pluck('name')
             ->toArray();
-
-        return view('user.produk.index', compact('products', 'categories'));
+            
+        // Data untuk filter ukuran - ambil ukuran yang tersedia
+        $availableSizes = ProductSize::select('size')
+            ->whereHas('product', function($query) {
+                $query->where('status', 'active');
+            })
+            ->where('stock', '>', 0)
+            ->distinct()
+            ->orderBy('size')
+            ->pluck('size')
+            ->toArray();
+        
+        return view('user.produk.index', compact('products', 'categories', 'availableSizes'));
     }
 
     /**
@@ -117,26 +130,27 @@ class ProdukController extends Controller
         if ($product->status !== 'active') {
             abort(404, 'Produk tidak ditemukan');
         }
-
-        // Load relasi kategori
-        $product->load('category');
-
+        
+        // Load relasi kategori dan ukuran
+        $product->load(['category', 'sizes']);
+        
         // Produk terkait berdasarkan kategori
-        $relatedProducts = Product::with('category')
+        $relatedProducts = Product::with(['category', 'sizes'])
             ->where('status', 'active')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
             ->limit(4)
             ->get();
-
+            
         // Transform related products
         $relatedProducts->transform(function ($product) {
             $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
             $product->image_exists = !empty($product->image);
             $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : null;
+            $product->total_stock = $product->sizes->sum('stock');
             return $product;
         });
-
+        
         return view('user.produk.show', compact('product', 'relatedProducts'));
     }
 

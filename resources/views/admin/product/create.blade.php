@@ -253,6 +253,34 @@
       </div>
     </div>
 
+    <!-- Di dalam form, tambahkan bagian ukuran sepatu -->
+<!-- Di dalam form, tambahkan bagian ukuran sepatu -->
+<div class="mb-6">
+  <h3 class="text-lg font-semibold mb-4">Ukuran Sepatu</h3>
+  
+  <div id="sizes-container" class="space-y-3">
+    <!-- Size input akan ditambahkan di sini -->
+    <div class="size-input-row flex items-center gap-2">
+      <input type="text" name="sizes[0][size]" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
+             class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+             required>
+      <input type="number" name="sizes[0][stock]" placeholder="Stok" min="0"
+             class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+             required>
+      <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+  </div>
+  
+  <button type="button" onclick="addSize()" class="mt-3 text-purple-400 hover:text-purple-300 flex items-center gap-2">
+    <i class="fas fa-plus"></i>
+    <span>Tambah Ukuran</span>
+  </button>
+  
+  <p class="text-xs text-slate-400 mt-2">Tambahkan setidaknya satu ukuran untuk produk ini</p>
+</div>
+
     <!-- Description -->
     <div class="mt-6">
       <label class="block text-sm font-medium mb-2">Deskripsi Produk</label>
@@ -285,6 +313,144 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+
+// Fungsi untuk menambahkan input ukuran baru
+let sizeIndex = 1; // Mulai dari 1 karena sudah ada satu input default
+
+function addSize() {
+  const container = document.getElementById('sizes-container');
+  
+  // Batasi maksimal 10 ukuran
+  if (sizeIndex >= 10) {
+    Swal.fire({
+      title: 'Batas Maksimal Tercapai',
+      text: 'Anda hanya dapat menambahkan maksimal 10 ukuran!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  const sizeDiv = document.createElement('div');
+  sizeDiv.className = 'size-input-row flex items-center gap-2';
+  sizeDiv.innerHTML = `
+    <input type="text" name="sizes[${sizeIndex}][size]" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
+           class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+           required>
+    <input type="number" name="sizes[${sizeIndex}][stock]" placeholder="Stok" min="0"
+           class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+           required>
+    <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
+      <i class="fas fa-trash"></i>
+    </button>
+  `;
+  
+  container.appendChild(sizeDiv);
+  sizeIndex++;
+}
+
+// Fungsi untuk menghapus input ukuran
+function removeSize(button) {
+  const container = document.getElementById('sizes-container');
+  
+  // Pastikan setidaknya satu input ukuran tersisa
+  if (container.children.length <= 1) {
+    Swal.fire({
+      title: 'Tidak Dapat Menghapus',
+      text: 'Setidaknya harus ada satu ukuran produk!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  button.parentElement.remove();
+  
+  // Update indeks untuk semua input yang tersisa
+  updateSizeIndices();
+}
+
+// Fungsi untuk memperbarui indeks input ukuran
+function updateSizeIndices() {
+  const container = document.getElementById('sizes-container');
+  const rows = container.querySelectorAll('.size-input-row');
+  
+  rows.forEach((row, index) => {
+    const inputs = row.querySelectorAll('input');
+    inputs[0].name = `sizes[${index}][size]`;
+    inputs[1].name = `sizes[${index}][stock]`;
+  });
+  
+  // Update global sizeIndex
+  sizeIndex = rows.length;
+}
+
+// Validasi form sebelum submit
+document.getElementById('product-form').addEventListener('submit', function(e) {
+  // Validasi ukuran
+  const sizeRows = document.querySelectorAll('.size-input-row');
+  let hasValidSize = false;
+  
+  sizeRows.forEach(row => {
+    const sizeInput = row.querySelector('input[name*="[size]"]');
+    const stockInput = row.querySelector('input[name*="[stock]"]');
+    
+    if (sizeInput.value.trim() && stockInput.value && parseInt(stockInput.value) >= 0) {
+      hasValidSize = true;
+    }
+  });
+  
+  if (!hasValidSize) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Ukuran Tidak Valid',
+      text: 'Pastikan Anda telah memasukkan setidaknya satu ukuran dengan stok yang valid!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  // Validasi lainnya...
+  const name = document.querySelector('input[name="name"]').value;
+  const price = parseIDR(document.querySelector('#price-input').value);
+  const stock = document.querySelector('input[name="stock"]').value;
+  const category = document.querySelector('select[name="category_id"]').value;
+  
+  if (!name || !price || !stock || !category) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Form Tidak Lengkap',
+      text: 'Mohon lengkapi semua field yang wajib diisi!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  if (price <= 0) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Harga Tidak Valid',
+      text: 'Harga produk harus lebih dari 0!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  if (parseInt(stock) < 0) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Stok Tidak Valid',
+      text: 'Stok produk tidak boleh negatif!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+});
+
 // Auto hide alerts
 setTimeout(() => {
   const alerts = document.querySelectorAll('#success-alert, #error-alert');

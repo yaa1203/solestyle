@@ -192,6 +192,7 @@
               @endif
             </a>
           </th>
+          <th class="pb-4 text-left">Ukuran & Stok</th>
           <th class="pb-4 text-right">Aksi</th>
         </tr>
       </thead>
@@ -204,8 +205,15 @@
           </td>
           <td class="py-4">
             <div class="flex items-center gap-3">
-              <!-- PERBAIKAN: Menampilkan gambar produk dengan penanganan error yang lebih baik -->
-              @if($product->image && Storage::disk('public')->exists($product->image))
+              <!-- Gunakan gambar utama -->
+              @if($product->primary_image && Storage::disk('public')->exists($product->primary_image->path))
+                <img src="{{ $product->primary_image_url }}" alt="{{ $product->name }}" 
+                    class="w-12 h-12 object-cover rounded-xl"
+                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center" style="display: none;">
+                  <i class="fas fa-image text-slate-500"></i>
+                </div>
+              @elseif($product->image && Storage::disk('public')->exists($product->image))
                 <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}" 
                     class="w-12 h-12 object-cover rounded-xl"
                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -233,36 +241,56 @@
             @endif
           </td>
           <td class="py-4">{{ $product->formatted_price }}</td>
+          <!-- Di kolom stok total, tampilkan total stok dari semua ukuran -->
           <td class="py-4">
             <span class="{{ $product->stock_badge_class }}" 
-                  onclick="editStock({{ $product->id }}, {{ $product->stock }})" 
-                  style="cursor: pointer;" title="Klik untuk edit stok">
-              {{ $product->stock }}
+                  onclick="editStock({{ $product->id }}, {{ $product->total_stock }})" 
+                  style="cursor: pointer;" title="Klik untuk edit stok total">
+              {{ $product->total_stock }}
             </span>
           </td>
           <td class="py-4">
             <span class="{{ $product->status_badge_class }}">{{ $product->status_text }}</span>
           </td>
-          <td class="py-4 text-right">
-            <div class="flex justify-end gap-2">
-              <a href="{{ route('products.show', $product) }}" 
-                 class="p-2 text-slate-400 hover:text-blue-400" title="Lihat Detail">
-                <i class="fas fa-eye"></i>
-              </a>
-              <a href="{{ route('products.edit', $product) }}" 
-                 class="p-2 text-slate-400 hover:text-yellow-400" title="Edit">
-                <i class="fas fa-edit"></i>
-              </a>
-              <button onclick="toggleStatus({{ $product->id }})" 
-                      class="p-2 text-slate-400 hover:text-green-400" title="Toggle Status">
-                <i class="fas fa-toggle-{{ $product->status === 'active' ? 'on' : 'off' }}"></i>
-              </button>
-              <button onclick="deleteProduct({{ $product->id }}, '{{ $product->name }}')" 
-                      class="p-2 text-slate-400 hover:text-red-400" title="Hapus">
-                <i class="fas fa-trash"></i>
-              </button>
-            </div>
-          </td>
+          <td class="py-4">
+      <!-- Menampilkan ukuran sepatu -->
+      <div class="flex flex-wrap gap-1">
+        @foreach($product->sizes as $size)
+          <span class="inline-block px-2 py-1 rounded text-xs font-medium 
+                {{ $size->stock > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' }}">
+            {{ $size->size }} ({{ $size->stock }})
+          </span>
+        @endforeach
+        @if($product->sizes->count() == 0)
+          <span class="text-slate-500 text-sm">Tidak ada ukuran</span>
+        @endif
+      </div>
+    </td>
+          <!-- Di kolom aksi, tambahkan tombol untuk edit stok per ukuran -->
+        <td class="py-4 text-right">
+          <div class="flex justify-end gap-2">
+            <a href="{{ route('products.show', $product) }}" 
+              class="p-2 text-slate-400 hover:text-blue-400" title="Lihat Detail">
+              <i class="fas fa-eye"></i>
+            </a>
+            <a href="{{ route('products.edit', $product) }}" 
+              class="p-2 text-slate-400 hover:text-yellow-400" title="Edit">
+              <i class="fas fa-edit"></i>
+            </a>
+            <button onclick="toggleStatus({{ $product->id }})" 
+                    class="p-2 text-slate-400 hover:text-green-400" title="Toggle Status">
+              <i class="fas fa-toggle-{{ $product->status === 'active' ? 'on' : 'off' }}"></i>
+            </button>
+            <button onclick="editSizeStock({{ $product->id }})" 
+                    class="p-2 text-slate-400 hover:text-purple-400" title="Edit Stok per Ukuran">
+              <i class="fas fa-ruler"></i>
+            </button>
+            <button onclick="deleteProduct({{ $product->id }}, '{{ $product->name }}')" 
+                    class="p-2 text-slate-400 hover:text-red-400" title="Hapus">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </td>
         </tr>
         @empty
         <tr>
@@ -321,38 +349,30 @@
   @endif
 </div>
 
-<!-- Stock Edit Modal -->
-<div id="stock-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
+<div id="size-stock-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
   <div class="glass-effect rounded-2xl w-full max-w-md mx-4">
     <div class="p-6 border-b border-slate-700">
-      <h3 class="text-xl font-bold">Edit Stok Produk</h3>
+      <h3 class="text-xl font-bold">Edit Stok per Ukuran</h3>
     </div>
     
     <div class="p-6">
       <div class="mb-4">
-        <label class="block text-sm font-medium mb-2">Aksi Stok</label>
-        <select id="stock-action" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none">
-          <option value="set">Set Stok Baru</option>
-          <option value="add">Tambah Stok</option>
-          <option value="subtract">Kurangi Stok</option>
-        </select>
+        <label class="block text-sm font-medium mb-2">Produk</label>
+        <input type="text" id="product-name" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3" readonly>
       </div>
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-2">Jumlah Stok</label>
-        <input type="number" id="stock-amount" min="0" 
-               class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none">
-      </div>
-      <div class="text-sm text-slate-400">
-        Stok saat ini: <span id="current-stock"></span>
+      
+      <div id="sizes-list" class="space-y-3">
+        <!-- Daftar ukuran akan dimuat di sini -->
       </div>
     </div>
     
     <div class="p-6 border-t border-slate-700 flex justify-end gap-4">
-      <button onclick="closeStockModal()" class="glass-effect hover:bg-slate-700/50 px-6 py-2 rounded-xl font-semibold">Batal</button>
-      <button onclick="saveStock()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-xl font-semibold">Simpan</button>
+      <button onclick="closeSizeStockModal()" class="glass-effect hover:bg-slate-700/50 px-6 py-2 rounded-xl font-semibold">Batal</button>
+      <button onclick="saveSizeStock()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-xl font-semibold">Simpan</button>
     </div>
   </div>
 </div>
+
 @endsection
 
 @section('scripts')
@@ -360,6 +380,90 @@
 <script>
 let selectedProducts = [];
 let currentProductId = null;
+
+function editSizeStock(productId) {
+    currentProductId = productId;
+    
+    // Fetch product details including sizes
+    fetch(`/products/${productId}/sizes`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('product-name').value = data.product.name;
+                
+                // Populate sizes list
+                const sizesList = document.getElementById('sizes-list');
+                sizesList.innerHTML = '';
+                
+                data.product.sizes.forEach(size => {
+                    const sizeDiv = document.createElement('div');
+                    sizeDiv.className = 'flex items-center gap-2';
+                    sizeDiv.innerHTML = `
+                        <span class="w-16 text-sm">${size.size}</span>
+                        <input type="number" id="size-${size.id}" value="${size.stock}" min="0"
+                               class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none">
+                    `;
+                    sizesList.appendChild(sizeDiv);
+                });
+                
+                // Show modal
+                document.getElementById('size-stock-modal').classList.remove('hidden');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
+        });
+}
+
+function closeSizeStockModal() {
+    document.getElementById('size-stock-modal').classList.add('hidden');
+    currentProductId = null;
+}
+
+function saveSizeStock() {
+    // Collect size data
+    const sizes = [];
+    const sizeInputs = document.querySelectorAll('#sizes-list input');
+    
+    sizeInputs.forEach(input => {
+        const sizeId = input.id.replace('size-', '');
+        const stock = parseInt(input.value);
+        sizes.push({ id: sizeId, stock: stock });
+    });
+    
+    // Send to server
+    fetch(`/products/${currentProductId}/update-size-stock`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify({ sizes: sizes })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Berhasil', data.message, 'success');
+            location.reload();
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
+    });
+    
+    closeSizeStockModal();
+}
+
+// Close modal when clicking outside
+document.getElementById('size-stock-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+        closeSizeStockModal();
+    }
+});
 
 // Auto hide alerts
 setTimeout(() => {

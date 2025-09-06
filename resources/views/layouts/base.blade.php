@@ -6,13 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'SoleStyle - Toko Sepatu Online')</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
@@ -46,10 +43,6 @@
         .nav-link:hover::after,
         .nav-link.active::after {
             width: 100%;
-        }
-        
-        .search-container {
-            position: relative;
         }
         
         .search-input {
@@ -100,12 +93,10 @@
     @yield('styles')
 </head>
 <body class="bg-slate-900 text-white min-h-screen">
-    <!-- Navbar -->
     <nav class="navbar-glass fixed top-0 left-0 right-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 
-                <!-- Logo & Brand -->
                 <div class="flex items-center space-x-8">
                     <a href="{{ url('/') }}" class="flex items-center space-x-2 group">
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform">
@@ -114,18 +105,36 @@
                         <span class="logo-text text-xl font-bold">SoleStyle</span>
                     </a>
                     
-                    <!-- Desktop Navigation -->
                     <div class="hidden lg:flex items-center space-x-1">
-                        <a href="{{ route('dashboard') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('dashboard*') ? 'active' : '' }}">
+                        <a href="{{ url('/') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('/') ? 'active' : '' }}">
                             <i class="fas fa-home mr-2"></i>Beranda
                         </a>
                         <a href="{{ url('produk') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('produk*') ? 'active' : '' }}">
                             <i class="fas fa-th-large mr-2"></i>Produk
                         </a>
                         
-                        <a href="{{ url('kategori') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('kategori*') ? 'active' : '' }}">
-                            <i class="fas fa-th-large mr-2"></i>Kategori
-                        </a>
+                        <div class="relative group">
+                            <button class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 flex items-center">
+                                <i class="fas fa-list mr-2"></i>Kategori
+                                <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                            </button>
+                            <div class="dropdown absolute top-full left-0 mt-2 w-48 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                <div class="p-2">
+                                    <a href="{{ url('produk?category[]=sneakers') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-running mr-2 text-purple-400"></i>Sneakers
+                                    </a>
+                                    <a href="{{ url('produk?category[]=formal') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-user-tie mr-2 text-purple-400"></i>Formal
+                                    </a>
+                                    <a href="{{ url('produk?category[]=casual') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-walking mr-2 text-purple-400"></i>Casual
+                                    </a>
+                                    <a href="{{ url('produk?category[]=sport') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-dumbbell mr-2 text-purple-400"></i>Sport
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                         
                         <a href="{{ url('about') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50">
                             <i class="fas fa-info-circle mr-2"></i>Tentang
@@ -136,16 +145,13 @@
                     </div>
                 </div>
 
-                <!-- Right Section -->
                 <div class="flex items-center space-x-4">
                     
-                    <!-- Wishlist -->
                     <a href="{{ url('wishlist') }}" class="relative p-2 rounded-lg hover:bg-slate-700/50 transition-colors group">
                         <i class="fas fa-heart text-lg group-hover:text-red-400 transition-colors"></i>
                         <span class="wishlist-badge absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 to-pink-600 text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium" id="wishlist-count">0</span>
                     </a>
                     
-                    <!-- Cart dengan Cart Count yang Berfungsi -->
                     <a href="{{ url('cart') }}" class="relative p-2 rounded-lg hover:bg-slate-700/50 transition-colors group">
                         <i class="fas fa-shopping-cart text-lg group-hover:text-purple-400 transition-colors"></i>
                         <span class="cart-badge absolute -top-1 -right-1 bg-gradient-to-r from-pink-600 to-purple-600 text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium" id="cart-count">
@@ -162,7 +168,6 @@
                         </span>
                     </a>
                     
-                    <!-- User Menu -->
                     @auth
                     <div class="relative group">
                         <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
@@ -181,11 +186,17 @@
                                 <a href="{{ url('orders') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                                     <i class="fas fa-box mr-2 text-purple-400"></i>Pesanan
                                 </a>
-                                <a href="{{ url('settings') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
-                                    <i class="fas fa-cog mr-2 text-purple-400"></i>Pengaturan
-                                </a>
+                                @if(Auth::user()->role === 'admin')
+                                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-tachometer-alt mr-2 text-purple-400"></i>Dashboard Admin
+                                    </a>
+                                @else
+                                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                        <i class="fas fa-chart-line mr-2 text-purple-400"></i>Dashboard
+                                    </a>
+                                @endif
                                 <hr class="my-2 border-slate-700">
-                                <form method="POST" action="{{ url('logout') }}">
+                                <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <button type="submit" class="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors text-red-400">
                                         <i class="fas fa-sign-out-alt mr-2"></i>Keluar
@@ -196,16 +207,15 @@
                     </div>
                     @else
                     <div class="flex items-center space-x-2">
-                        <a href="{{ url('login') }}" class="px-4 py-2 rounded-lg border border-purple-500/50 hover:bg-purple-500/10 transition-colors">
+                        <a href="{{ route('login.show') }}" class="px-4 py-2 rounded-lg border border-purple-500/50 hover:bg-purple-500/10 transition-colors">
                             Masuk
                         </a>
-                        <a href="{{ url('register') }}" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
+                        <a href="{{ route('register.show') }}" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
                             Daftar
                         </a>
                     </div>
                     @endauth
                     
-                    <!-- Mobile Menu Button -->
                     <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                         <i class="fas fa-bars text-lg"></i>
                     </button>
@@ -213,17 +223,15 @@
             </div>
         </div>
 
-        <!-- Mobile Menu -->
         <div id="mobile-menu" class="mobile-menu lg:hidden absolute top-full left-0 right-0">
             <div class="px-4 py-6 space-y-4">
-                <a href="{{ route('dashboard') }}" class="block px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-colors {{ request()->is('/') ? 'bg-slate-700/30' : '' }}">
+                <a href="{{ url('/') }}" class="block px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-colors {{ request()->is('/') ? 'bg-slate-700/30' : '' }}">
                     <i class="fas fa-home mr-3 text-purple-400"></i>Beranda
                 </a>
                 <a href="{{ url('produk') }}" class="block px-4 py-3 rounded-lg hover:bg-slate-700/50 transition-colors {{ request()->is('produk*') ? 'bg-slate-700/30' : '' }}">
                     <i class="fas fa-th-large mr-3 text-purple-400"></i>Produk
                 </a>
                 
-                <!-- Mobile Categories -->
                 <div class="space-y-2">
                     <div class="px-4 py-2 text-sm text-slate-400 uppercase tracking-wide">Kategori</div>
                     <a href="{{ url('produk?category[]=sneakers') }}" class="block px-6 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
@@ -247,7 +255,6 @@
                     <i class="fas fa-envelope mr-3 text-purple-400"></i>Kontak
                 </a>
                 
-                <!-- Mobile User Actions -->
                 @auth
                 <div class="border-t border-slate-700 pt-4 mt-4 space-y-2">
                     <div class="px-4 py-2 flex items-center space-x-3">
@@ -262,7 +269,16 @@
                     <a href="{{ url('orders') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                         <i class="fas fa-box mr-3 text-purple-400"></i>Pesanan
                     </a>
-                    <form method="POST" action="{{ url('logout') }}">
+                    @if(Auth::user()->role === 'admin')
+                    <a href="{{ route('admin.dashboard') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                        <i class="fas fa-tachometer-alt mr-3 text-purple-400"></i>Dashboard Admin
+                    </a>
+                    @else
+                    <a href="{{ route('dashboard') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                        <i class="fas fa-chart-line mr-3 text-purple-400"></i>Dashboard
+                    </a>
+                    @endif
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit" class="w-full text-left px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors text-red-400">
                             <i class="fas fa-sign-out-alt mr-3"></i>Keluar
@@ -271,10 +287,10 @@
                 </div>
                 @else
                 <div class="border-t border-slate-700 pt-4 mt-4 space-y-2">
-                    <a href="{{ url('login') }}" class="block px-4 py-3 text-center rounded-lg border border-purple-500/50 hover:bg-purple-500/10 transition-colors">
+                    <a href="{{ route('login.show') }}" class="block px-4 py-3 text-center rounded-lg border border-purple-500/50 hover:bg-purple-500/10 transition-colors">
                         Masuk
                     </a>
-                    <a href="{{ url('register') }}" class="block px-4 py-3 text-center bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
+                    <a href="{{ route('register.show') }}" class="block px-4 py-3 text-center bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
                         Daftar
                     </a>
                 </div>
@@ -283,12 +299,10 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
     <main class="pt-16">
         @yield('content')
     </main>
 
-    <!-- Footer -->
     <footer class="bg-slate-800/50 backdrop-blur-sm border-t border-slate-700 mt-16">
         <div class="max-w-7xl mx-auto px-6 py-12">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8">

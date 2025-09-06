@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\CategoryController;
@@ -25,6 +27,11 @@ Route::get('products-export', [ProductController::class, 'export'])->name('produ
     // API Routes for AJAX
     Route::get('/api/products', [ProdukController::class, 'apiProducts'])->name('produk.api');
     Route::get('/api/search-suggestions', [ProdukController::class, 'searchSuggestions'])->name('produk.search');
+    Route::patch('/products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+Route::patch('/products/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
+Route::get('/products/{product}/sizes', [ProductController::class, 'getProductSizes'])->name('products.get-sizes');
+Route::patch('/products/{product}/update-size-stock', [ProductController::class, 'updateSizeStock'])->name('products.update-size-stock');
+Route::post('/products/{product}/set-primary-image', [ProductController::class, 'setPrimaryImage'])->name('products.set-primary-image');
 
 // Category resource routes
     Route::resource('category', CategoryController::class);
@@ -60,4 +67,21 @@ Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('car
 Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
 
-Route::resource('admin/dashboard', DashboardController::class);
+// Rute Otentikasi (Login & Register)
+Route::controller(AuthController::class)->group(function () {
+    Route::get('/register', 'showRegisterForm')->name('register.show');
+    Route::post('/register', 'register')->name('register');
+    Route::get('/login', 'showLoginForm')->name('login.show');
+    Route::post('/login', 'login')->name('login');
+    Route::post('/logout', 'logout')->name('logout');
+});
+
+// Rute Dashboard User (akses untuk semua yang sudah login)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
+});
+
+// Rute Dashboard Admin (akses khusus Admin)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+});

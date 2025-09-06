@@ -181,7 +181,14 @@
           <i class="fas fa-shopping-cart text-xl"></i>
           <span class="absolute -top-1 -right-1 bg-pink-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">2</span>
         </button>
-        <a href="#" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-xl font-semibold transition-all transform hover:scale-105">Login</a>
+        <div class="flex items-center space-x-2">
+                        <a href="{{ url('login') }}" class="px-4 py-2 rounded-lg border border-purple-500/50 hover:bg-purple-500/10 transition-colors">
+                            Masuk
+                        </a>
+                        <a href="{{ url('register') }}" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all font-medium">
+                            Daftar
+                        </a>
+                    </div>
       </div>
 
       <!-- Tombol Mobile -->

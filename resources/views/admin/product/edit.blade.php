@@ -312,17 +312,36 @@
           @error('status') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <!-- Weight (Optional) -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Berat (gram)</label>
-          <div class="relative">
-            <i class="fas fa-weight absolute left-4 top-3 text-purple-400"></i>
-            <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" min="0"
-                   class="w-full bg-slate-800/50 border border-slate-600 rounded-xl pl-12 pr-4 py-3 focus:border-purple-500 focus:outline-none placeholder-slate-400" 
-                   placeholder="Berat produk dalam gram...">
-          </div>
-          @error('weight') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-        </div>
+<!-- Di dalam form, tambahkan bagian ukuran sepatu -->
+<!-- Di dalam form, tambahkan bagian ukuran sepatu -->
+<div class="mb-6">
+  <h3 class="text-lg font-semibold mb-4">Ukuran Sepatu</h3>
+  
+  <div id="sizes-container" class="space-y-3">
+    <!-- Existing sizes will be rendered here -->
+    @foreach($product->sizes as $index => $size)
+    <div class="size-input-row flex items-center gap-2" data-size-id="{{ $size->id }}">
+      <input type="hidden" name="sizes[{{ $index }}][id]" value="{{ $size->id }}">
+      <input type="text" name="sizes[{{ $index }}][size]" value="{{ $size->size }}" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
+             class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+             required>
+      <input type="number" name="sizes[{{ $index }}][stock]" value="{{ $size->stock }}" placeholder="Stok" min="0"
+             class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+             required>
+      <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
+        <i class="fas fa-trash"></i>
+      </button>
+    </div>
+    @endforeach
+  </div>
+  
+  <button type="button" onclick="addSize()" class="mt-3 text-purple-400 hover:text-purple-300 flex items-center gap-2">
+    <i class="fas fa-plus"></i>
+    <span>Tambah Ukuran</span>
+  </button>
+  
+  <p class="text-xs text-slate-400 mt-2">Tambahkan atau ubah ukuran produk. Minimal satu ukuran harus diisi.</p>
+</div>
 
         <!-- Product Stats -->
         <div class="glass-effect rounded-xl p-4">
@@ -415,6 +434,175 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+
+// Fungsi untuk menambahkan ukuran baru
+let sizeIndex = {{ $product->sizes->count() }}; // Mulai dari jumlah ukuran yang sudah ada
+
+function addSize() {
+  const container = document.getElementById('sizes-container');
+  
+  // Batasi maksimal 10 ukuran
+  if (sizeIndex >= 10) {
+    Swal.fire({
+      title: 'Batas Maksimal Tercapai',
+      text: 'Anda hanya dapat menambahkan maksimal 10 ukuran!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  const sizeDiv = document.createElement('div');
+  sizeDiv.className = 'size-input-row flex items-center gap-2';
+  sizeDiv.innerHTML = `
+    <input type="text" name="sizes[${sizeIndex}][size]" placeholder="Ukuran (misal: 38, 39, S, M, L)" 
+           class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+           required>
+    <input type="number" name="sizes[${sizeIndex}][stock]" placeholder="Stok" min="0"
+           class="w-24 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none"
+           required>
+    <button type="button" onclick="removeSize(this)" class="text-red-400 hover:text-red-300">
+      <i class="fas fa-trash"></i>
+    </button>
+  `;
+  
+  container.appendChild(sizeDiv);
+  sizeIndex++;
+}
+
+// Fungsi untuk menghapus ukuran
+function removeSize(button) {
+  const container = document.getElementById('sizes-container');
+  const row = button.closest('.size-input-row');
+  
+  // Pastikan setidaknya satu input ukuran tersisa
+  if (container.querySelectorAll('.size-input-row').length <= 1) {
+    Swal.fire({
+      title: 'Tidak Dapat Menghapus',
+      text: 'Setidaknya harus ada satu ukuran produk!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  // Jika ini ukuran yang sudah ada (memiliki id), tandai untuk dihapus
+  const sizeId = row.dataset.sizeId;
+  if (sizeId) {
+    // Tambahkan input hidden untuk menandai penghapusan
+    const hiddenInput = document.createElement('input');
+    hiddenInput.type = 'hidden';
+    hiddenInput.name = 'removed_sizes[]';
+    hiddenInput.value = sizeId;
+    container.appendChild(hiddenInput);
+  }
+  
+  row.remove();
+  
+  // Update indeks untuk semua input yang tersisa
+  updateSizeIndices();
+}
+
+// Fungsi untuk memperbarui indeks input ukuran
+function updateSizeIndices() {
+  const container = document.getElementById('sizes-container');
+  const rows = container.querySelectorAll('.size-input-row');
+  
+  rows.forEach((row, index) => {
+    // Hapus input id yang lama jika ada
+    const oldIdInput = row.querySelector('input[type="hidden"]');
+    if (oldIdInput && oldIdInput.name === 'sizes[index][id]') {
+      oldIdInput.remove();
+    }
+    
+    // Tambahkan input id untuk ukuran yang sudah ada
+    const sizeId = row.dataset.sizeId;
+    if (sizeId) {
+      const idInput = document.createElement('input');
+      idInput.type = 'hidden';
+      idInput.name = `sizes[${index}][id]`;
+      idInput.value = sizeId;
+      row.insertBefore(idInput, row.firstChild);
+    }
+    
+    // Update nama input ukuran dan stok
+    const sizeInput = row.querySelector('input[name*="[size]"]');
+    const stockInput = row.querySelector('input[name*="[stock]"]');
+    
+    if (sizeInput) sizeInput.name = `sizes[${index}][size]`;
+    if (stockInput) stockInput.name = `sizes[${index}][stock]`;
+  });
+  
+  // Update global sizeIndex
+  sizeIndex = rows.length;
+}
+
+// Validasi form sebelum submit
+document.getElementById('product-form').addEventListener('submit', function(e) {
+  // Validasi ukuran
+  const sizeRows = document.querySelectorAll('.size-input-row');
+  let hasValidSize = false;
+  
+  sizeRows.forEach(row => {
+    const sizeInput = row.querySelector('input[name*="[size]"]');
+    const stockInput = row.querySelector('input[name*="[stock]"]');
+    
+    if (sizeInput.value.trim() && stockInput.value && parseInt(stockInput.value) >= 0) {
+      hasValidSize = true;
+    }
+  });
+  
+  if (!hasValidSize) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Ukuran Tidak Valid',
+      text: 'Pastikan Anda telah memasukkan setidaknya satu ukuran dengan stok yang valid!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  // Validasi lainnya...
+  const name = document.querySelector('input[name="name"]').value;
+  const price = parseIDR(document.querySelector('#price-input').value);
+  const stock = document.querySelector('input[name="stock"]').value;
+  const category = document.querySelector('select[name="category_id"], select[name="category"]').value;
+  
+  if (!name || !price || !stock || !category) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Form Tidak Lengkap',
+      text: 'Mohon lengkapi semua field yang wajib diisi!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  if (parseFloat(price) <= 0) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Harga Tidak Valid',
+      text: 'Harga produk harus lebih dari 0!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+  
+  if (parseInt(stock) < 0) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Stok Tidak Valid',
+      text: 'Stok produk tidak boleh negatif!',
+      icon: 'warning',
+      confirmButtonColor: '#8b5cf6'
+    });
+    return;
+  }
+});
+
 // Auto hide alerts
 setTimeout(() => {
   const alerts = document.querySelectorAll('#success-alert, #error-alert');
