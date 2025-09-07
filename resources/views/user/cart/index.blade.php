@@ -1,7 +1,5 @@
 @extends('user.layouts.app')
-
 @section('title', 'Keranjang - SoleStyle')
-
 @section('content')
 <div class="container mx-auto px-4 py-6">
     
@@ -9,7 +7,6 @@
         <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Keranjang Belanja</h1>
         <p class="text-slate-400 mt-2">Review produk sebelum checkout</p>
     </div>
-
     @if($cartItems->count() > 0)
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
@@ -139,13 +136,8 @@
                             <div class="text-right flex-shrink-0">
                                 <p class="font-bold text-xl text-white mb-2" id="subtotal-{{ $item->id }}">{{ $item->formatted_subtotal }}</p>
                                 
-                                <!-- Action buttons -->
-                                <div class="flex flex-col space-y-2">
-                                    <button onclick="saveForLater({{ $item->id }})" 
-                                            class="text-blue-400 hover:text-blue-300 text-sm flex items-center justify-end transition-colors"
-                                            title="Simpan untuk nanti">
-                                        <i class="fas fa-bookmark mr-1"></i>Simpan
-                                    </button>
+                                <!-- Action button -->
+                                <div class="flex flex-col">
                                     <button onclick="removeItem({{ $item->id }})" 
                                             class="text-red-400 hover:text-red-300 text-sm flex items-center justify-end transition-colors">
                                         <i class="fas fa-trash mr-1"></i>Hapus
@@ -171,11 +163,7 @@
                 <div id="bulk-actions" class="mt-6 pt-6 border-t border-slate-600 hidden">
                     <div class="flex items-center justify-between">
                         <span class="text-slate-300">Aksi untuk item terpilih:</span>
-                        <div class="flex space-x-3">
-                            <button onclick="bulkSaveForLater()" 
-                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors">
-                                <i class="fas fa-bookmark mr-2"></i>Simpan untuk Nanti
-                            </button>
+                        <div>
                             <button onclick="bulkRemove()" 
                                     class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm flex items-center transition-colors">
                                 <i class="fas fa-trash mr-2"></i>Hapus Terpilih
@@ -184,20 +172,9 @@
                     </div>
                 </div>
             </div>
-            
-            <!-- Saved for Later Section -->
-            <div id="saved-items" class="mt-8 bg-slate-800/30 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hidden">
-                <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-bookmark text-blue-400 mr-3"></i>
-                    Disimpan untuk Nanti
-                </h3>
-                <div id="saved-items-list" class="space-y-3">
-                    <!-- Saved items will be populated here -->
-                </div>
-            </div>
         </div>
         
-        <!-- Order Summary (sama seperti sebelumnya) -->
+        <!-- Order Summary -->
         <div class="lg:col-span-1">
             <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6 sticky top-24">
                 <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
@@ -321,32 +298,9 @@
     </div>
     @endif
 </div>
-
-<!-- Loading overlay -->
-<div id="loading-overlay" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center z-50">
-    <div class="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
-        <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-        <p class="text-white">Memperbarui keranjang...</p>
-    </div>
-</div>
-
 <script>
 // Global variables
 let selectedItems = new Set();
-let savedForLaterItems = [];
-
-// Show loading
-function showLoading() {
-    document.getElementById('loading-overlay').classList.remove('hidden');
-    document.getElementById('loading-overlay').classList.add('flex');
-}
-
-// Hide loading
-function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-    document.getElementById('loading-overlay').classList.remove('flex');
-}
-
 // Toast notification function
 function showNotification(message, type = 'info') {
     const colors = {
@@ -389,7 +343,6 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
-
 // Toggle select all checkbox
 function toggleSelectAll() {
     const selectAllCheckbox = document.getElementById('select-all');
@@ -406,7 +359,6 @@ function toggleSelectAll() {
     
     updateSelection();
 }
-
 // Deselect all items
 function deselectAll() {
     selectedItems.clear();
@@ -416,7 +368,6 @@ function deselectAll() {
     });
     updateSelection();
 }
-
 // Update selection state and UI
 function updateSelection() {
     const checkboxes = document.querySelectorAll('.item-checkbox');
@@ -459,7 +410,6 @@ function updateSelection() {
     // Update order summary
     updateOrderSummary();
 }
-
 // Calculate and update order summary based on selected items
 function updateOrderSummary() {
     const checkedCheckboxes = document.querySelectorAll('.item-checkbox:checked');
@@ -493,7 +443,6 @@ function updateOrderSummary() {
         checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
     }
 }
-
 // Format price to Indonesian Rupiah
 function formatPrice(amount) {
     return new Intl.NumberFormat('id-ID', {
@@ -503,15 +452,12 @@ function formatPrice(amount) {
         maximumFractionDigits: 0
     }).format(amount).replace('IDR', 'Rp');
 }
-
 // Update quantity with animation
 function updateQuantity(cartId, newQuantity) {
     if (newQuantity < 1) {
         removeItem(cartId);
         return;
     }
-    
-    showLoading();
     
     fetch(`/cart/update/${cartId}`, {
         method: 'POST',
@@ -523,7 +469,6 @@ function updateQuantity(cartId, newQuantity) {
     })
     .then(response => response.json())
     .then(data => {
-        hideLoading();
         if (data.success) {
             // Update quantity input
             document.getElementById(`qty-${cartId}`).value = newQuantity;
@@ -553,17 +498,13 @@ function updateQuantity(cartId, newQuantity) {
         }
     })
     .catch(error => {
-        hideLoading();
         console.error('Error:', error);
         showNotification('Terjadi kesalahan saat mengupdate keranjang', 'error');
     });
 }
-
 // Remove item with confirmation
 function removeItem(cartId) {
     if (!confirm('Yakin ingin menghapus item ini dari keranjang?')) return;
-    
-    showLoading();
     
     fetch(`/cart/remove/${cartId}`, {
         method: 'DELETE',
@@ -573,7 +514,6 @@ function removeItem(cartId) {
     })
     .then(response => response.json())
     .then(data => {
-        hideLoading();
         if (data.success) {
             // Remove from selected items
             selectedItems.delete(cartId.toString());
@@ -602,123 +542,15 @@ function removeItem(cartId) {
         }
     })
     .catch(error => {
-        hideLoading();
         console.error('Error:', error);
         showNotification('Terjadi kesalahan saat menghapus item', 'error');
     });
 }
-
-// Save item for later
-function saveForLater(cartId) {
-    showLoading();
-    
-    // Simulate API call
-    setTimeout(() => {
-        hideLoading();
-        
-        const itemElement = document.getElementById(`cart-item-${cartId}`);
-        const itemData = {
-            id: cartId,
-            name: itemElement.querySelector('h4').textContent,
-            // Add more item data as needed
-        };
-        
-        savedForLaterItems.push(itemData);
-        
-        // Remove from cart display
-        selectedItems.delete(cartId.toString());
-        itemElement.style.transform = 'translateY(-20px)';
-        itemElement.style.opacity = '0';
-        
-        setTimeout(() => {
-            itemElement.remove();
-            updateSelection();
-            updateSavedItemsDisplay();
-        }, 300);
-        
-        showNotification('Item disimpan untuk nanti', 'info');
-    }, 1000);
-}
-
-// Update saved items display
-function updateSavedItemsDisplay() {
-    const savedItemsSection = document.getElementById('saved-items');
-    const savedItemsList = document.getElementById('saved-items-list');
-    
-    if (savedForLaterItems.length > 0) {
-        savedItemsSection.classList.remove('hidden');
-        
-        savedItemsList.innerHTML = savedForLaterItems.map(item => `
-            <div class="flex items-center justify-between p-3 bg-slate-700/20 rounded-lg">
-                <span class="text-slate-300">${item.name}</span>
-                <div class="flex space-x-2">
-                    <button onclick="moveBackToCart(${item.id})" class="text-purple-400 hover:text-purple-300 text-sm">
-                        <i class="fas fa-shopping-cart mr-1"></i>Pindah ke Keranjang
-                    </button>
-                    <button onclick="removeSavedItem(${item.id})" class="text-red-400 hover:text-red-300 text-sm">
-                        <i class="fas fa-trash mr-1"></i>Hapus
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    } else {
-        savedItemsSection.classList.add('hidden');
-    }
-}
-
-// Move item back to cart
-function moveBackToCart(itemId) {
-    showLoading();
-    
-    // Simulate API call
-    setTimeout(() => {
-        hideLoading();
-        savedForLaterItems = savedForLaterItems.filter(item => item.id !== itemId);
-        updateSavedItemsDisplay();
-        showNotification('Item dipindahkan kembali ke keranjang', 'success');
-        // In real implementation, reload cart or add item back
-        location.reload();
-    }, 1000);
-}
-
-// Remove saved item permanently
-function removeSavedItem(itemId) {
-    if (!confirm('Yakin ingin menghapus item ini secara permanen?')) return;
-    
-    savedForLaterItems = savedForLaterItems.filter(item => item.id !== itemId);
-    updateSavedItemsDisplay();
-    showNotification('Item berhasil dihapus', 'success');
-}
-
-// Bulk save for later
-function bulkSaveForLater() {
-    if (selectedItems.size === 0) return;
-    
-    if (!confirm(`Yakin ingin menyimpan ${selectedItems.size} item untuk nanti?`)) return;
-    
-    showLoading();
-    
-    // Simulate API call
-    setTimeout(() => {
-        hideLoading();
-        
-        selectedItems.forEach(itemId => {
-            saveForLater(itemId);
-        });
-        
-        selectedItems.clear();
-        updateSelection();
-        showNotification(`${selectedItems.size} item disimpan untuk nanti`, 'info');
-    }, 1000);
-}
-
 // Bulk remove selected items
 function bulkRemove() {
     if (selectedItems.size === 0) return;
     
     if (!confirm(`Yakin ingin menghapus ${selectedItems.size} item dari keranjang?`)) return;
-    
-    showLoading();
     
     const promises = Array.from(selectedItems).map(itemId => {
         return fetch(`/cart/remove/${itemId}`, {
@@ -732,8 +564,6 @@ function bulkRemove() {
     Promise.all(promises)
         .then(responses => Promise.all(responses.map(r => r.json())))
         .then(results => {
-            hideLoading();
-            
             // Remove items from DOM
             selectedItems.forEach(itemId => {
                 const itemElement = document.getElementById(`cart-item-${itemId}`);
@@ -758,17 +588,13 @@ function bulkRemove() {
             }
         })
         .catch(error => {
-            hideLoading();
             console.error('Error:', error);
             showNotification('Terjadi kesalahan saat menghapus item', 'error');
         });
 }
-
 // Clear entire cart
 function clearCart() {
     if (!confirm('Yakin ingin mengosongkan seluruh keranjang belanja?')) return;
-    
-    showLoading();
     
     fetch('/cart/clear', {
         method: 'DELETE',
@@ -778,7 +604,6 @@ function clearCart() {
     })
     .then(response => response.json())
     .then(data => {
-        hideLoading();
         if (data.success) {
             showNotification('Keranjang berhasil dikosongkan', 'success');
             setTimeout(() => {
@@ -789,12 +614,10 @@ function clearCart() {
         }
     })
     .catch(error => {
-        hideLoading();
         console.error('Error:', error);
         showNotification('Terjadi kesalahan', 'error');
     });
 }
-
 // Apply promo code
 function applyPromo() {
     const promoCode = document.getElementById('promo-code').value.trim();
@@ -807,12 +630,8 @@ function applyPromo() {
         return;
     }
     
-    showLoading();
-    
     // Simulate API call
     setTimeout(() => {
-        hideLoading();
-        
         // Mock promo validation
         const validPromos = {
             'WELCOME10': { discount: 10, type: 'percentage', message: 'Diskon 10% berhasil diterapkan!' },
@@ -837,15 +656,12 @@ function applyPromo() {
         }
     }, 1000);
 }
-
 // Checkout function
 function checkout() {
     if (selectedItems.size === 0) {
         showNotification('Pilih minimal satu item untuk checkout', 'warning');
         return;
     }
-    
-    showLoading();
     
     // Prepare checkout data
     const checkoutItems = Array.from(selectedItems).map(itemId => {
@@ -871,7 +687,6 @@ function checkout() {
     })
     .then(response => response.json())
     .then(data => {
-        hideLoading();
         if (data.success) {
             showNotification('Mengarahkan ke halaman checkout...', 'info');
             setTimeout(() => {
@@ -882,12 +697,10 @@ function checkout() {
         }
     })
     .catch(error => {
-        hideLoading();
         console.error('Error:', error);
         showNotification('Terjadi kesalahan saat memproses checkout', 'error');
     });
 }
-
 // Update cart count in navbar
 function updateCartCount(count) {
     const cartCountElement = document.getElementById('cart-count');
@@ -907,14 +720,12 @@ function updateCartCount(count) {
         totalItemsElement.textContent = count;
     }
 }
-
 // Prevent negative quantity input
 document.addEventListener('input', function(e) {
     if (e.target.type === 'number' && e.target.value < 1) {
         e.target.value = 1;
     }
 });
-
 // Auto-save quantity changes after typing stops
 let timeouts = {};
 document.addEventListener('input', function(e) {
@@ -932,7 +743,6 @@ document.addEventListener('input', function(e) {
         }, 1000);
     }
 });
-
 // Initialize page
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listeners to checkboxes
@@ -943,7 +753,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize selection state
     updateSelection();
 });
-
 // Keyboard shortcuts
 document.addEventListener('keydown', function(e) {
     // Ctrl/Cmd + A to select all
@@ -959,15 +768,12 @@ document.addEventListener('keydown', function(e) {
         bulkRemove();
     }
 });
-
 // Handle page visibility change
 document.addEventListener('visibilitychange', function() {
     if (!document.hidden) {
         // Optionally refresh cart data when page becomes visible
     }
 });
-
-console.log('Cart page with size support initialized');
+console.log('Cart page initialized');
 </script>
-
 @endsection

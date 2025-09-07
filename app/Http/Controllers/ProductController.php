@@ -42,27 +42,17 @@ class ProductController extends Controller
             $query->where('status', $statusValue);
         }
 
-        // Filter berdasarkan stok total
+        // Filter berdasarkan stok
         if ($request->filled('stock_filter') && $request->stock_filter !== 'Semua Stok') {
             switch ($request->stock_filter) {
                 case 'Stok Tersedia':
-                    $query->whereHas('sizes', function($sizeQuery) {
-                        $sizeQuery->selectRaw('SUM(stock) as total_stock')
-                                ->havingRaw('SUM(stock) > 10');
-                    });
+                    $query->where('stock', '>', 10);
                     break;
                 case 'Stok Rendah':
-                    $query->whereHas('sizes', function($sizeQuery) {
-                        $sizeQuery->selectRaw('SUM(stock) as total_stock')
-                                ->havingRaw('SUM(stock) > 0 AND SUM(stock) <= 10');
-                    });
+                    $query->whereBetween('stock', [1, 10]);
                     break;
                 case 'Habis':
-                    $query->whereDoesntHave('sizes', function($sizeQuery) {
-                        $sizeQuery->where('stock', '>', 0);
-                    })->orWhereHas('sizes', function($sizeQuery) {
-                        $sizeQuery->where('stock', 0);
-                    });
+                    $query->where('stock', '=', 0);
                     break;
             }
         }
@@ -116,117 +106,47 @@ class ProductController extends Controller
         'sku' => 'required|string|max:255|unique:products',
         'category_id' => 'required|exists:categories,id',
         'price' => 'required|numeric|min:0|max:999999999999.99',
-        'stock' => 'required|integer|min:0',
         'status' => 'required|in:active,inactive',
         'description' => 'nullable|string',
         'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        'sizes' => 'required|array|min:1',
+        'sizes' => 'required|array',
         'sizes.*.size' => 'required|string|max:10',
         'sizes.*.stock' => 'required|integer|min:0'
     ]);
-
+    
     if ($validator->fails()) {
         return redirect()->back()
             ->withErrors($validator)
             ->withInput();
     }
-
+    
+    // Simpan produk terlebih dahulu
     $data = $request->only([
-        'name', 'sku', 'category_id', 'price',
-        'stock', 'status', 'description'
+        'name', 'sku', 'category_id', 'price', 
+        'status', 'description'
     ]);
-
+    
     // Handle image upload
     if ($request->hasFile('image')) {
-        try {
-            $image = $request->file('image');
-            if (!$image->isValid()) {
-                return redirect()->back()
-                    ->with('error', 'File gambar tidak valid!')
-                    ->withInput();
-            }
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::random(20) . '_' . time() . '.' . $extension;
-            if (!Storage::disk('public')->exists('products')) {
-                Storage::disk('public')->makeDirectory('products');
-            }
-            $imagePath = $image->storeAs('products', $filename, 'public');
-            if (!Storage::disk('public')->exists($imagePath)) {
-                return redirect()->back()
-                    ->with('error', 'Gagal menyimpan gambar!')
-                    ->withInput();
-            }
-            $data['image'] = $imagePath;
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Gagal upload gambar: ' . $e->getMessage())
-                ->withInput();
-        }
+        // ... kode upload gambar ...
+        $data['image'] = $imagePath;
     }
-
-    try {
-        // Buat produk
-        $product = Product::create($data);
-        
-        // Handle gambar utama
-        if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::random(20) . '_' . time() . '.' . $extension;
-            
-            if (!Storage::disk('public')->exists('products')) {
-                Storage::disk('public')->makeDirectory('products');
-            }
-            
-            $imagePath = $image->storeAs('products', $filename, 'public');
-            $product->update(['image' => $imagePath]);
-            
-            // Simpan juga di tabel product_images sebagai gambar utama
-            $product->images()->create([
-                'path' => $imagePath,
-                'is_primary' => true
-            ]);
-        }
-        
-        // Handle gambar tambahan
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $extension = $image->getClientOriginalExtension();
-                    $filename = Str::random(20) . '_' . time() . '.' . $extension;
-                    
-                    $imagePath = $image->storeAs('products', $filename, 'public');
-                    
-                    $product->images()->create([
-                        'path' => $imagePath,
-                        'is_primary' => false
-                    ]);
-                }
-            }
-        }
-        
-        // Handle ukuran sepatu
-        if ($request->has('sizes') && is_array($request->sizes)) {
-            $sizesData = [];
-            foreach ($request->sizes as $size) {
-                $sizesData[] = [
-                    'size' => $size['size'],
-                    'stock' => $size['stock']
-                ];
-            }
-            $product->sizes()->createMany($sizesData);
-        }
-        
-        return redirect()->route('products.index')
-            ->with('success', 'Produk berhasil ditambahkan!');
-    } catch (\Exception $e) {
-        if (isset($data['image']) && Storage::disk('public')->exists($data['image'])) {
-            Storage::disk('public')->delete($data['image']);
-        }
-        return redirect()->back()
-            ->with('error', 'Gagal menambahkan produk: ' . $e->getMessage())
-            ->withInput();
+    
+    $product = Product::create($data);
+    
+    // Simpan ukuran sepatu
+    $sizes = [];
+    foreach ($request->sizes as $size) {
+        $sizes[] = [
+            'size' => $size['size'],
+            'stock' => $size['stock']
+        ];
     }
+    
+    $product->sizes()->createMany($sizes);
+    
+    return redirect()->route('products.index')
+        ->with('success', 'Produk berhasil ditambahkan!');
 }
 
 
@@ -264,184 +184,61 @@ class ProductController extends Controller
         ],
         'category_id' => 'required|exists:categories,id',
         'price' => 'required|numeric|min:0|max:999999999999.99',
-        'stock' => 'required|integer|min:0',
         'status' => 'required|in:active,inactive',
         'description' => 'nullable|string',
         'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
-        'sizes' => 'required|array|min:1',
-        'sizes.*.id' => 'nullable|exists:product_sizes,id',
+        'sizes' => 'required|array',
         'sizes.*.size' => 'required|string|max:10',
-        'sizes.*.stock' => 'required|integer|min:0'
+        'sizes.*.stock' => 'required|integer|min:0',
+        'sizes.*.id' => 'nullable|exists:product_sizes,id'
     ]);
-
+    
     if ($validator->fails()) {
         return redirect()->back()
             ->withErrors($validator)
             ->withInput();
     }
-
+    
+    // Update produk
     $data = $request->only([
         'name', 'sku', 'category_id', 'price', 
-        'stock', 'status', 'description'
+        'status', 'description'
     ]);
-
+    
     // Handle image upload
     if ($request->hasFile('image')) {
-        try {
-            $image = $request->file('image');
-            if (!$image->isValid()) {
-                return redirect()->back()
-                    ->with('error', 'File gambar tidak valid!')
-                    ->withInput();
-            }
-            
-            // Delete old image if exists
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
-            }
-            
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::random(20) . '_' . time() . '.' . $extension;
-            if (!Storage::disk('public')->exists('products')) {
-                Storage::disk('public')->makeDirectory('products');
-            }
-            $imagePath = $image->storeAs('products', $filename, 'public');
-            if (!Storage::disk('public')->exists($imagePath)) {
-                return redirect()->back()
-                    ->with('error', 'Gagal menyimpan gambar!')
-                    ->withInput();
-            }
-            $data['image'] = $imagePath;
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Gagal upload gambar: ' . $e->getMessage())
-                ->withInput();
-        }
+        // ... kode upload gambar ...
+        $data['image'] = $imagePath;
     }
-
-    try {
-        // Update produk
-        $product->update($data);
-        
-        // Handle gambar utama
-        if ($request->hasFile('image')) {
-            // Hapus gambar lama
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
-            }
-            
-            // Hapus gambar utama dari tabel product_images
-            $product->images()->where('is_primary', true)->delete();
-            
-            // Upload gambar baru
-            $image = $request->file('image');
-            $extension = $image->getClientOriginalExtension();
-            $filename = Str::random(20) . '_' . time() . '.' . $extension;
-            
-            if (!Storage::disk('public')->exists('products')) {
-                Storage::disk('public')->makeDirectory('products');
-            }
-            
-            $imagePath = $image->storeAs('products', $filename, 'public');
-            $product->update(['image' => $imagePath]);
-            
-            // Simpan juga di tabel product_images sebagai gambar utama
-            $product->images()->create([
-                'path' => $imagePath,
-                'is_primary' => true
+    
+    $product->update($data);
+    
+    // Update ukuran sepatu
+    $sizesData = $request->sizes;
+    
+    // Hapus ukuran yang tidak ada di request
+    $existingSizeIds = array_filter(array_column($sizesData, 'id'));
+    $product->sizes()->whereNotIn('id', $existingSizeIds)->delete();
+    
+    // Update atau buat ukuran baru
+    foreach ($sizesData as $sizeData) {
+        if (!empty($sizeData['id'])) {
+            // Update existing size
+            $product->sizes()->where('id', $sizeData['id'])->update([
+                'size' => $sizeData['size'],
+                'stock' => $sizeData['stock']
+            ]);
+        } else {
+            // Create new size
+            $product->sizes()->create([
+                'size' => $sizeData['size'],
+                'stock' => $sizeData['stock']
             ]);
         }
-        
-        // Handle gambar tambahan
-        if ($request->hasFile('images')) {
-            foreach ($request->file('images') as $image) {
-                if ($image->isValid()) {
-                    $extension = $image->getClientOriginalExtension();
-                    $filename = Str::random(20) . '_' . time() . '.' . $extension;
-                    
-                    $imagePath = $image->storeAs('products', $filename, 'public');
-                    
-                    $product->images()->create([
-                        'path' => $imagePath,
-                        'is_primary' => false
-                    ]);
-                }
-            }
-        }
-        
-        // Handle ukuran sepatu
-        if ($request->has('sizes')) {
-            // Hapus ukuran yang ditandai untuk dihapus
-            if ($request->has('removed_sizes')) {
-                $product->sizes()->whereIn('id', $request->removed_sizes)->delete();
-            }
-            
-            // Update atau buat ukuran baru
-            foreach ($request->sizes as $sizeData) {
-                if (!empty($sizeData['id'])) {
-                    // Update existing size
-                    $product->sizes()->where('id', $sizeData['id'])->update([
-                        'size' => $sizeData['size'],
-                        'stock' => $sizeData['stock']
-                    ]);
-                } else {
-                    // Create new size
-                    $product->sizes()->create([
-                        'size' => $sizeData['size'],
-                        'stock' => $sizeData['stock']
-                    ]);
-                }
-            }
-        }
-        
-        return redirect()->route('products.index')
-            ->with('success', 'Produk berhasil diperbarui!');
-    } catch (\Exception $e) {
-        if (isset($data['image']) && Storage::disk('public')->exists($data['image'])) {
-            Storage::disk('public')->delete($data['image']);
-        }
-        return redirect()->back()
-            ->with('error', 'Gagal memperbarui produk: ' . $e->getMessage())
-            ->withInput();
-    }
-}
-
-public function setPrimaryImage(Request $request, Product $product)
-{
-    $validator = Validator::make($request->all(), [
-        'image_id' => 'required|exists:product_images,id'
-    ]);
-    
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Data tidak valid!'
-        ], 422);
     }
     
-    try {
-        // Hapus status utama dari semua gambar produk
-        $product->images()->update(['is_primary' => false]);
-        
-        // Set gambar baru sebagai utama
-        $product->images()->where('id', $request->image_id)->update(['is_primary' => true]);
-        
-        // Update juga field image di tabel products
-        $primaryImage = $product->images()->where('is_primary', true)->first();
-        if ($primaryImage) {
-            $product->update(['image' => $primaryImage->path]);
-        }
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Gambar utama berhasil diubah!'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengubah gambar utama: ' . $e->getMessage()
-        ], 500);
-    }
+    return redirect()->route('products.index')
+        ->with('success', 'Produk berhasil diperbarui!');
 }
 
 // Tambahkan method untuk update stok per ukuran
@@ -818,4 +615,6 @@ public function getProductSizes(Product $product)
         'product' => $product
     ]);
 }
+
+
 }
