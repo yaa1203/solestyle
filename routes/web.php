@@ -11,7 +11,6 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\PesananController;
 
 // ========================================
 // PUBLIC ROUTES (HANYA WELCOME)
@@ -119,10 +118,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('category/export/csv', [CategoryController::class, 'export'])->name('category.export');
     Route::get('category/stats/data', [CategoryController::class, 'getStats'])->name('category.stats');
     
-    // ===== ADMIN ORDER MANAGEMENT =====
-    Route::get('pesanan', [PesananController::class, 'Index'])->name('pesanan.index');
-    Route::get('/pesanan/{id}', [PesananController::class, 'Show'])->name('pesanan.show');
-    Route::post('/pesanan/{id}/update-status', [PesananController::class, 'updateStatus'])->name('pesanan.updateStatus');
+    // // ===== ADMIN ORDER MANAGEMENT =====
+    // Route::get('pesanan', [PesananController::class, 'Index'])->name('pesanan.index');
+    // Route::get('/pesanan/{id}', [PesananController::class, 'Show'])->name('pesanan.show');
+    // Route::post('/pesanan/{id}/update-status', [PesananController::class, 'updateStatus'])->name('pesanan.updateStatus');
 });
 
 // ========================================
