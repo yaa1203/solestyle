@@ -460,7 +460,7 @@ function updateQuantity(cartId, newQuantity) {
     }
     
     fetch(`/cart/update/${cartId}`, {
-        method: 'POST',
+        method: 'get',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
@@ -657,49 +657,169 @@ function applyPromo() {
     }, 1000);
 }
 // Checkout function
+// Checkout function - Simple and reliable version
 function checkout() {
     if (selectedItems.size === 0) {
         showNotification('Pilih minimal satu item untuk checkout', 'warning');
         return;
     }
     
-    // Prepare checkout data
-    const checkoutItems = Array.from(selectedItems).map(itemId => {
-        const checkbox = document.querySelector(`[data-item-id="${itemId}"]`);
-        return {
-            id: itemId,
-            quantity: checkbox.dataset.quantity,
-            price: checkbox.dataset.price
-        };
-    });
+    const checkoutBtn = document.getElementById('checkout-btn');
+    const checkoutText = document.getElementById('checkout-text');
+    const originalText = checkoutText.textContent;
     
-    // Send to checkout endpoint
-    fetch('/checkout/process', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-        },
-        body: JSON.stringify({
-            items: checkoutItems,
-            promo_code: document.getElementById('promo-code').value.trim()
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showNotification('Mengarahkan ke halaman checkout...', 'info');
-            setTimeout(() => {
-                window.location.href = data.checkout_url || '/checkout';
-            }, 1000);
-        } else {
-            showNotification(data.message || 'Gagal memproses checkout', 'error');
+    // Show loading state
+    checkoutBtn.disabled = true;
+    checkoutText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+    
+    try {
+        // Create form for get submission
+        const form = document.createElement('form');
+        form.method = 'get';
+        form.action = '/checkout';
+        form.style.display = 'none';
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfToken);
+        
+        // Add selected items
+        const selectedItemsArray = Array.from(selectedItems);
+        selectedItemsArray.forEach((itemId, index) => {
+            const checkbox = document.querySelector(`[data-item-id="${itemId}"]`);
+            
+            // Item ID
+            const itemIdInput = document.createElement('input');
+            itemIdInput.type = 'hidden';
+            itemIdInput.name = `selected_items[${index}][id]`;
+            itemIdInput.value = itemId;
+            form.appendChild(itemIdInput);
+            
+            // Item quantity
+            const itemQtyInput = document.createElement('input');
+            itemQtyInput.type = 'hidden';
+            itemQtyInput.name = `selected_items[${index}][quantity]`;
+            itemQtyInput.value = checkbox.dataset.quantity;
+            form.appendChild(itemQtyInput);
+        });
+        
+        // Add promo code if exists
+        const promoCode = document.getElementById('promo-code').value.trim();
+        if (promoCode) {
+            const promoInput = document.createElement('input');
+            promoInput.type = 'hidden';
+            promoInput.name = 'promo_code';
+            promoInput.value = promoCode;
+            form.appendChild(promoInput);
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
+        
+        // Submit form
+        document.body.appendChild(form);
+        showNotification('Mengarahkan ke halaman checkout...', 'info');
+        
+        setTimeout(() => {
+            form.submit();
+        }, 800);
+        
+    } catch (error) {
+        console.error('Checkout error:', error);
         showNotification('Terjadi kesalahan saat memproses checkout', 'error');
-    });
+        
+        // Reset button state
+        checkoutBtn.disabled = false;
+        checkoutText.textContent = originalText;
+    }
+}
+
+// Helper function to redirect to checkout with form submission
+function redirectToCheckout(checkoutItems, promoCode) {
+    try {
+        // Create a temporary form to submit checkout data
+        const form = document.createElement('form');
+        form.method = 'get';
+        form.action = '/checkout';
+        form.style.display = 'none';
+        
+        // Add CSRF token
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfToken);
+        
+        // Add selected items
+        checkoutItems.forEach((item, index) => {
+            const itemIdInput = document.createElement('input');
+            itemIdInput.type = 'hidden';
+            itemIdInput.name = `selected_items[${index}][id]`;
+            itemIdInput.value = item.id;
+            form.appendChild(itemIdInput);
+            
+            const itemQtyInput = document.createElement('input');
+            itemQtyInput.type = 'hidden';
+            itemQtyInput.name = `selected_items[${index}][quantity]`;
+            itemQtyInput.value = item.quantity;
+            form.appendChild(itemQtyInput);
+        });
+        
+        // Add promo code if exists
+        if (promoCode) {
+            const promoInput = document.createElement('input');
+            promoInput.type = 'hidden';
+            promoInput.name = 'promo_code';
+            promoInput.value = promoCode;
+            form.appendChild(promoInput);
+        }
+        
+        // Submit form
+        document.body.appendChild(form);
+        showNotification('Mengarahkan ke halaman checkout...', 'info');
+        
+        setTimeout(() => {
+            form.submit();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Redirect error:', error);
+        showNotification('Terjadi kesalahan saat mengarahkan ke checkout', 'error');
+        
+        // Reset button state
+        const checkoutBtn = document.getElementById('checkout-btn');
+        const checkoutText = document.getElementById('checkout-text');
+        checkoutBtn.disabled = false;
+        checkoutText.textContent = `Checkout (${selectedItems.size} item)`;
+    }
+}
+
+// Alternative: Simple redirect approach (most reliable)
+function checkoutSimple() {
+    if (selectedItems.size === 0) {
+        showNotification('Pilih minimal satu item untuk checkout', 'warning');
+        return;
+    }
+    
+    // Store selected items in sessionStorage for checkout page
+    const checkoutData = {
+        selectedItems: Array.from(selectedItems),
+        promoCode: document.getElementById('promo-code').value.trim(),
+        timestamp: Date.now()
+    };
+    
+    try {
+        sessionStorage.setItem('checkout_data', JSON.stringify(checkoutData));
+        showNotification('Mengarahkan ke halaman checkout...', 'info');
+        
+        setTimeout(() => {
+            window.location.href = '/checkout';
+        }, 800);
+    } catch (error) {
+        console.error('SessionStorage error:', error);
+        // Fallback to simple redirect
+        window.location.href = '/checkout';
+    }
 }
 // Update cart count in navbar
 function updateCartCount(count) {

@@ -1,8 +1,6 @@
 @extends('admin.layouts.app')
-
 @section('title', 'Kelola Produk')
 @section('products-active', 'active')
-
 @section('styles')
 <style>
   .glass-effect {
@@ -28,7 +26,6 @@
   }
 </style>
 @endsection
-
 @section('content')
 <!-- Flash Messages -->
 @if(session('success'))
@@ -37,14 +34,12 @@
   {{ session('success') }}
 </div>
 @endif
-
 @if(session('error'))
 <div class="mb-6 bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-xl" id="error-alert">
   <i class="fas fa-exclamation-circle mr-2"></i>
   {{ session('error') }}
 </div>
 @endif
-
 <div class="flex items-center justify-between mb-8">
   <div>
     <h2 class="text-2xl font-bold">Kelola Produk</h2>
@@ -61,7 +56,6 @@
     </a>
   </div>
 </div>
-
 <!-- Filter -->
 <form method="GET" action="{{ route('products.index') }}">
   <div class="glass-effect rounded-2xl p-4 mb-6">
@@ -118,7 +112,6 @@
     @endif
   </div>
 </form>
-
 <!-- Bulk Actions -->
 <div class="glass-effect rounded-2xl p-4 mb-6 hidden" id="bulk-actions">
   <div class="flex items-center justify-between">
@@ -137,7 +130,6 @@
     </div>
   </div>
 </div>
-
 <!-- Products Table -->
 <div class="glass-effect rounded-2xl p-6 mb-8">
   <div class="overflow-x-auto">
@@ -203,41 +195,26 @@
             <input type="checkbox" class="product-checkbox rounded bg-slate-700 border-slate-600" 
                    value="{{ $product->id }}" onchange="updateBulkActions()">
           </td>
-          <!-- Perbaikan untuk bagian gambar produk di tabel -->
-            <td class="py-4">
-              <div class="flex items-center gap-3">
-                @php
-                  $imageUrl = null;
-                  
-                  // Prioritas: primary_image -> image utama -> default
-                  if ($product->primary_image && Storage::disk('public')->exists($product->primary_image->path)) {
-                    $imageUrl = Storage::url($product->primary_image->path);
-                  } elseif (!empty($product->image) && Storage::disk('public')->exists($product->image)) {
-                    $imageUrl = Storage::url($product->image);
-                  }
-                @endphp
-                
-                @if($imageUrl)
-                  <img src="{{ $imageUrl }}" 
-                      alt="{{ $product->name }}" 
-                      class="w-12 h-12 object-cover rounded-xl border border-slate-600"
-                      loading="lazy"
-                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                  <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center border border-slate-600" style="display: none;">
-                    <i class="fas fa-image text-slate-500"></i>
-                  </div>
-                @else
-                  <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center border border-slate-600">
-                    <i class="fas fa-image text-slate-500"></i>
-                  </div>
-                @endif
-                
-                <div>
-                  <div class="font-semibold">{{ $product->name }}</div>
-                  <div class="text-slate-400 text-sm">SKU: {{ $product->sku }}</div>
+          <td class="py-4">
+            <div class="flex items-center gap-3">
+              @if($product->image_url)
+                <img src="{{ $product->image_url }}" 
+                    alt="{{ $product->name }}" 
+                    class="w-12 h-12 object-cover rounded-xl border border-slate-600"
+                    loading="lazy"
+                    onerror="this.src='{{ asset('images/product-placeholder.png') }}';">
+              @else
+                <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center border border-slate-600">
+                  <i class="fas fa-image text-slate-500"></i>
                 </div>
+              @endif
+              
+              <div>
+                <div class="font-semibold">{{ $product->name }}</div>
+                <div class="text-slate-400 text-sm">SKU: {{ $product->sku }}</div>
               </div>
-            </td>
+            </div>
+          </td>
           <td class="py-4">
             @if($product->category)
               <span class="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-lg text-sm">
@@ -248,7 +225,6 @@
             @endif
           </td>
           <td class="py-4">{{ $product->formatted_price }}</td>
-          <!-- Di kolom stok total, tampilkan total stok dari semua ukuran -->
           <td class="py-4">
             <span class="{{ $product->stock_badge_class }}" 
                   onclick="editStock({{ $product->id }}, {{ $product->total_stock }})" 
@@ -260,48 +236,46 @@
             <span class="{{ $product->status_badge_class }}">{{ $product->status_text }}</span>
           </td>
           <td class="py-4">
-      <!-- Menampilkan ukuran sepatu -->
-      <div class="flex flex-wrap gap-1">
-        @foreach($product->sizes as $size)
-          <span class="inline-block px-2 py-1 rounded text-xs font-medium 
-                {{ $size->stock > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' }}">
-            {{ $size->size }} ({{ $size->stock }})
-          </span>
-        @endforeach
-        @if($product->sizes->count() == 0)
-          <span class="text-slate-500 text-sm">Tidak ada ukuran</span>
-        @endif
-      </div>
-    </td>
-          <!-- Di kolom aksi, tambahkan tombol untuk edit stok per ukuran -->
-        <td class="py-4 text-right">
-          <div class="flex justify-end gap-2">
-            <a href="{{ route('products.show', $product) }}" 
-              class="p-2 text-slate-400 hover:text-blue-400" title="Lihat Detail">
-              <i class="fas fa-eye"></i>
-            </a>
-            <a href="{{ route('products.edit', $product) }}" 
-              class="p-2 text-slate-400 hover:text-yellow-400" title="Edit">
-              <i class="fas fa-edit"></i>
-            </a>
-            <button onclick="toggleStatus({{ $product->id }})" 
-                    class="p-2 text-slate-400 hover:text-green-400" title="Toggle Status">
-              <i class="fas fa-toggle-{{ $product->status === 'active' ? 'on' : 'off' }}"></i>
-            </button>
-            <button onclick="editSizeStock({{ $product->id }})" 
-                    class="p-2 text-slate-400 hover:text-purple-400" title="Edit Stok per Ukuran">
-              <i class="fas fa-ruler"></i>
-            </button>
-            <button onclick="deleteProduct({{ $product->id }}, '{{ $product->name }}')" 
-                    class="p-2 text-slate-400 hover:text-red-400" title="Hapus">
-              <i class="fas fa-trash"></i>
-            </button>
-          </div>
-        </td>
+            <div class="flex flex-wrap gap-1">
+              @foreach($product->sizes as $size)
+                <span class="inline-block px-2 py-1 rounded text-xs font-medium 
+                      {{ $size->stock > 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400' }}">
+                  {{ $size->size }} ({{ $size->stock }})
+                </span>
+              @endforeach
+              @if($product->sizes->count() == 0)
+                <span class="text-slate-500 text-sm">Tidak ada ukuran</span>
+              @endif
+            </div>
+          </td>
+          <td class="py-4 text-right">
+            <div class="flex justify-end gap-2">
+              <a href="{{ route('products.show', $product) }}" 
+                class="p-2 text-slate-400 hover:text-blue-400" title="Lihat Detail">
+                <i class="fas fa-eye"></i>
+              </a>
+              <a href="{{ route('products.edit', $product) }}" 
+                class="p-2 text-slate-400 hover:text-yellow-400" title="Edit">
+                <i class="fas fa-edit"></i>
+              </a>
+              <button onclick="toggleStatus({{ $product->id }})" 
+                      class="p-2 text-slate-400 hover:text-green-400" title="Toggle Status">
+                <i class="fas fa-toggle-{{ $product->status === 'active' ? 'on' : 'off' }}"></i>
+              </button>
+              <button onclick="editSizeStock({{ $product->id }})" 
+                      class="p-2 text-slate-400 hover:text-purple-400" title="Edit Stok per Ukuran">
+                <i class="fas fa-ruler"></i>
+              </button>
+              <button onclick="deleteProduct({{ $product->id }}, '{{ $product->name }}')" 
+                      class="p-2 text-slate-400 hover:text-red-400" title="Hapus">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
         </tr>
         @empty
         <tr>
-          <td colspan="7" class="py-8 text-center text-slate-400">
+          <td colspan="8" class="py-8 text-center text-slate-400">
             <i class="fas fa-box-open text-4xl mb-4 block"></i>
             <p>Tidak ada produk yang ditemukan</p>
             @if(request()->hasAny(['search', 'category', 'status', 'stock_filter']))
@@ -331,7 +305,6 @@
           <i class="fas fa-chevron-left"></i>
         </a>
       @endif
-
       <!-- Page Numbers -->
       @foreach($products->getUrlRange(1, $products->lastPage()) as $page => $url)
         @if($page == $products->currentPage())
@@ -340,7 +313,6 @@
           <a href="{{ $url }}" class="glass-effect hover:bg-slate-700/50 w-10 h-10 rounded-xl flex items-center justify-center">{{ $page }}</a>
         @endif
       @endforeach
-
       <!-- Next Page -->
       @if($products->hasMorePages())
         <a href="{{ $products->nextPageUrl() }}" class="glass-effect hover:bg-slate-700/50 w-10 h-10 rounded-xl flex items-center justify-center">
@@ -356,6 +328,47 @@
   @endif
 </div>
 
+<!-- Modal untuk Edit Stok Total -->
+<div id="stock-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
+  <div class="glass-effect rounded-2xl w-full max-w-md mx-4">
+    <div class="p-6 border-b border-slate-700">
+      <h3 class="text-xl font-bold">Edit Stok Total</h3>
+    </div>
+    
+    <div class="p-6">
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Produk</label>
+        <input type="text" id="product-name" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3" readonly>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Stok Saat Ini</label>
+        <p class="text-slate-400" id="current-stock">0</p>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Aksi</label>
+        <select id="stock-action" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none">
+          <option value="set">Set Stok</option>
+          <option value="add">Tambah Stok</option>
+          <option value="subtract">Kurangi Stok</option>
+        </select>
+      </div>
+      
+      <div class="mb-4">
+        <label class="block text-sm font-medium mb-2">Jumlah</label>
+        <input type="number" id="stock-amount" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none" min="0">
+      </div>
+    </div>
+    
+    <div class="p-6 border-t border-slate-700 flex justify-end gap-4">
+      <button onclick="closeStockModal()" class="glass-effect hover:bg-slate-700/50 px-6 py-2 rounded-xl font-semibold">Batal</button>
+      <button onclick="saveStock()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-xl font-semibold">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal untuk Edit Stok per Ukuran -->
 <div id="size-stock-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
   <div class="glass-effect rounded-2xl w-full max-w-md mx-4">
     <div class="p-6 border-b border-slate-700">
@@ -379,15 +392,12 @@
     </div>
   </div>
 </div>
-
 @endsection
-
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 let selectedProducts = [];
 let currentProductId = null;
-
 function editSizeStock(productId) {
     currentProductId = productId;
     
@@ -423,12 +433,10 @@ function editSizeStock(productId) {
             Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
         });
 }
-
 function closeSizeStockModal() {
     document.getElementById('size-stock-modal').classList.add('hidden');
     currentProductId = null;
 }
-
 function saveSizeStock() {
     // Collect size data
     const sizes = [];
@@ -464,14 +472,12 @@ function saveSizeStock() {
     
     closeSizeStockModal();
 }
-
 // Close modal when clicking outside
 document.getElementById('size-stock-modal').addEventListener('click', (e) => {
     if (e.target === e.currentTarget) {
         closeSizeStockModal();
     }
 });
-
 // Auto hide alerts
 setTimeout(() => {
   const alerts = document.querySelectorAll('#success-alert, #error-alert');
@@ -480,7 +486,6 @@ setTimeout(() => {
     setTimeout(() => alert.remove(), 300);
   });
 }, 5000);
-
 // Select All Functionality
 function toggleSelectAll() {
   const selectAll = document.getElementById('select-all');
@@ -492,7 +497,6 @@ function toggleSelectAll() {
   
   updateBulkActions();
 }
-
 // Update bulk actions visibility
 function updateBulkActions() {
   const checkboxes = document.querySelectorAll('.product-checkbox:checked');
@@ -508,7 +512,6 @@ function updateBulkActions() {
     bulkActions.classList.add('hidden');
   }
 }
-
 // Delete single product
 function deleteProduct(id, name) {
   Swal.fire({
@@ -534,7 +537,6 @@ function deleteProduct(id, name) {
     }
   });
 }
-
 // Delete multiple products
 function deleteSelected() {
   if (selectedProducts.length === 0) return;
@@ -563,7 +565,6 @@ function deleteSelected() {
     }
   });
 }
-
 // Toggle product status
 function toggleStatus(id) {
   const form = document.createElement('form');
@@ -576,21 +577,19 @@ function toggleStatus(id) {
   document.body.appendChild(form);
   form.submit();
 }
-
 // Stock management
 function editStock(productId, currentStock) {
   currentProductId = productId;
+  document.getElementById('product-name').value = document.querySelector(`tr[data-product-id="${productId}"] .font-semibold`).textContent;
   document.getElementById('current-stock').textContent = currentStock;
   document.getElementById('stock-amount').value = '';
   document.getElementById('stock-action').value = 'set';
   document.getElementById('stock-modal').classList.remove('hidden');
 }
-
 function closeStockModal() {
   document.getElementById('stock-modal').classList.add('hidden');
   currentProductId = null;
 }
-
 function saveStock() {
   const action = document.getElementById('stock-action').value;
   const amount = document.getElementById('stock-amount').value;
@@ -626,21 +625,18 @@ function saveStock() {
   
   closeStockModal();
 }
-
 // Close modal when clicking outside
 document.getElementById('stock-modal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) {
     closeStockModal();
   }
 });
-
 // Auto-submit filter form on change
 document.querySelectorAll('select[name="category"], select[name="status"], select[name="stock_filter"]').forEach(select => {
   select.addEventListener('change', function() {
     this.closest('form').submit();
   });
 });
-
 // Search with debounce
 let searchTimeout;
 const searchInput = document.querySelector('input[name="search"]');

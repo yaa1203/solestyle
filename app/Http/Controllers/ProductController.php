@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
@@ -9,7 +7,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
-
 class ProductController extends Controller
 {
     /**
@@ -18,7 +15,6 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         $query = Product::with('category'); // Eager load category relationship
-
         // Filter berdasarkan pencarian
         if ($request->filled('search')) {
             $search = $request->search;
@@ -30,18 +26,15 @@ class ProductController extends Controller
                   });
             });
         }
-
         // Filter berdasarkan kategori
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
-
         // Filter berdasarkan status
         if ($request->filled('status') && $request->status !== 'Semua Status') {
             $statusValue = $request->status === 'Aktif' ? 'active' : 'inactive';
             $query->where('status', $statusValue);
         }
-
         // Filter berdasarkan stok
         if ($request->filled('stock_filter') && $request->stock_filter !== 'Semua Stok') {
             switch ($request->stock_filter) {
@@ -56,7 +49,6 @@ class ProductController extends Controller
                     break;
             }
         }
-
         // Sorting
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
@@ -70,15 +62,12 @@ class ProductController extends Controller
                   ->orderBy('categories.name', $sortOrder)
                   ->select('products.*');
         }
-
         // Pagination
         $products = $query->paginate(15)->withQueryString();
-
         // Data untuk filter dropdown - menggunakan categories table
         $categories = Category::active()->orderBy('name')->get();
         $statusOptions = ['Semua Status', 'Aktif', 'Tidak Aktif'];
         $stockOptions = ['Semua Stok', 'Stok Tersedia', 'Stok Rendah', 'Habis'];
-
         return view('admin.product.index', compact(
             'products', 
             'categories', 
@@ -86,7 +75,6 @@ class ProductController extends Controller
             'stockOptions'
         ));
     }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -95,7 +83,6 @@ class ProductController extends Controller
         $categories = Category::active()->get(); // hanya kategori aktif
         return view('admin.product.create', compact('categories'));
     }
-
     /**
      * Store a newly created resource in storage.
      */
@@ -120,15 +107,26 @@ class ProductController extends Controller
             ->withInput();
     }
     
+    // Handle image upload
+    $imagePath = null;
+    if ($request->hasFile('image')) {
+        try {
+            $imagePath = $this->handleImageUpload($request->file('image'));
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal mengunggah gambar: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+    
     // Simpan produk terlebih dahulu
     $data = $request->only([
         'name', 'sku', 'category_id', 'price', 
-        'status', 'description'
+        'status', 'description', 'stock'
     ]);
     
-    // Handle image upload
-    if ($request->hasFile('image')) {
-        // ... kode upload gambar ...
+    // Tambahkan path gambar jika ada
+    if ($imagePath) {
         $data['image'] = $imagePath;
     }
     
@@ -149,7 +147,6 @@ class ProductController extends Controller
         ->with('success', 'Produk berhasil ditambahkan!');
 }
 
-
     /**
      * Display the specified resource.
      */
@@ -158,7 +155,6 @@ class ProductController extends Controller
         $product->load('category'); // Load category relationship
         return view('admin.product.show', compact('product'));
     }
-
     /**
      * Show the form for editing the specified resource.
      */
@@ -168,7 +164,6 @@ class ProductController extends Controller
         $product->load('category'); // Load category relationship
         return view('admin.product.edit', compact('product', 'categories'));
     }
-
     /**
      * Update the specified resource in storage.
      */
@@ -199,15 +194,26 @@ class ProductController extends Controller
             ->withInput();
     }
     
+    // Handle image upload
+    $imagePath = $product->image; // Keep the old image path by default
+    if ($request->hasFile('image')) {
+        try {
+            $imagePath = $this->handleImageUpload($request->file('image'), $product->image);
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Gagal mengunggah gambar: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+    
     // Update produk
     $data = $request->only([
         'name', 'sku', 'category_id', 'price', 
         'status', 'description'
     ]);
     
-    // Handle image upload
-    if ($request->hasFile('image')) {
-        // ... kode upload gambar ...
+    // Update image path if a new image was uploaded
+    if ($imagePath !== $product->image) {
         $data['image'] = $imagePath;
     }
     
@@ -240,7 +246,6 @@ class ProductController extends Controller
     return redirect()->route('products.index')
         ->with('success', 'Produk berhasil diperbarui!');
 }
-
 // Tambahkan method untuk update stok per ukuran
 public function updateSizeStock(Request $request, Product $product)
 {
@@ -264,6 +269,10 @@ public function updateSizeStock(Request $request, Product $product)
             ]);
         }
         
+        // Update total stock
+        $totalStock = $product->sizes->sum('stock');
+        $product->update(['stock' => $totalStock]);
+        
         return response()->json([
             'success' => true,
             'message' => 'Stok per ukuran berhasil diperbarui!'
@@ -275,7 +284,6 @@ public function updateSizeStock(Request $request, Product $product)
         ], 500);
     }
 }
-
     /**
      * Remove the specified resource from storage.
      */
@@ -286,7 +294,6 @@ public function updateSizeStock(Request $request, Product $product)
             if ($product->image && Storage::disk('public')->exists($product->image)) {
                 Storage::disk('public')->delete($product->image);
             }
-
             $product->delete();
             
             return redirect()->route('products.index')
@@ -296,7 +303,6 @@ public function updateSizeStock(Request $request, Product $product)
                 ->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
         }
     }
-
     /**
      * Delete multiple products
      */
@@ -306,12 +312,10 @@ public function updateSizeStock(Request $request, Product $product)
             'product_ids' => 'required|array',
             'product_ids.*' => 'exists:products,id'
         ]);
-
         if ($validator->fails()) {
             return redirect()->back()
                 ->with('error', 'Data tidak valid!');
         }
-
         try {
             $products = Product::whereIn('id', $request->product_ids)->get();
             
@@ -331,7 +335,6 @@ public function updateSizeStock(Request $request, Product $product)
                 ->with('error', 'Gagal menghapus produk: ' . $e->getMessage());
         }
     }
-
     /**
      * Toggle product status (active/inactive)
      */
@@ -341,7 +344,6 @@ public function updateSizeStock(Request $request, Product $product)
             $product->update([
                 'status' => $product->status === 'active' ? 'inactive' : 'active'
             ]);
-
             $newStatus = $product->status === 'active' ? 'aktif' : 'tidak aktif';
             
             return redirect()->back()
@@ -351,7 +353,6 @@ public function updateSizeStock(Request $request, Product $product)
                 ->with('error', 'Gagal mengubah status produk: ' . $e->getMessage());
         }
     }
-
     /**
      * Update stock for a product
      */
@@ -361,14 +362,12 @@ public function updateSizeStock(Request $request, Product $product)
             'stock' => 'required|integer|min:0',
             'action' => 'required|in:set,add,subtract'
         ]);
-
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data tidak valid!'
             ], 422);
         }
-
         try {
             $newStock = $request->stock;
             
@@ -384,9 +383,7 @@ public function updateSizeStock(Request $request, Product $product)
                     $newStock = $request->stock;
                     break;
             }
-
             $product->update(['stock' => $newStock]);
-
             return response()->json([
                 'success' => true,
                 'message' => 'Stok berhasil diperbarui!',
@@ -399,14 +396,12 @@ public function updateSizeStock(Request $request, Product $product)
             ], 500);
         }
     }
-
     /**
      * Export products to CSV
      */
     public function export(Request $request)
     {
         $query = Product::with('category');
-
         // Apply same filters as index method
         if ($request->filled('search')) {
             $search = $request->search;
@@ -418,16 +413,13 @@ public function updateSizeStock(Request $request, Product $product)
                   });
             });
         }
-
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
-
         if ($request->filled('status') && $request->status !== 'Semua Status') {
             $statusValue = $request->status === 'Aktif' ? 'active' : 'inactive';
             $query->where('status', $statusValue);
         }
-
         if ($request->filled('stock_filter') && $request->stock_filter !== 'Semua Stok') {
             switch ($request->stock_filter) {
                 case 'Stok Tersedia':
@@ -441,16 +433,13 @@ public function updateSizeStock(Request $request, Product $product)
                     break;
             }
         }
-
         $products = $query->orderBy('name')->get();
-
         $filename = 'products_export_' . date('Y-m-d_H-i-s') . '.csv';
         
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
-
         $callback = function() use ($products) {
             $file = fopen('php://output', 'w');
             
@@ -469,7 +458,6 @@ public function updateSizeStock(Request $request, Product $product)
                 'Deskripsi',
                 'Tanggal Dibuat'
             ]);
-
             // Data
             foreach ($products as $product) {
                 fputcsv($file, [
@@ -484,20 +472,16 @@ public function updateSizeStock(Request $request, Product $product)
                     $product->created_at->format('d/m/Y H:i:s')
                 ]);
             }
-
             fclose($file);
         };
-
         return response()->stream($callback, 200, $headers);
     }
-
     /**
      * Get product data for API/AJAX requests
      */
     public function apiIndex(Request $request)
     {
         $query = Product::with('category');
-
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->search;
@@ -509,16 +493,13 @@ public function updateSizeStock(Request $request, Product $product)
                   });
             });
         }
-
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
-
         if ($request->filled('status') && $request->status !== 'Semua Status') {
             $statusValue = $request->status === 'Aktif' ? 'active' : 'inactive';
             $query->where('status', $statusValue);
         }
-
         if ($request->filled('stock_filter') && $request->stock_filter !== 'Semua Stok') {
             switch ($request->stock_filter) {
                 case 'Stok Tersedia':
@@ -532,15 +513,12 @@ public function updateSizeStock(Request $request, Product $product)
                     break;
             }
         }
-
         $products = $query->orderBy('name')->paginate(10);
-
         return response()->json([
             'success' => true,
             'data' => $products
         ]);
     }
-
     /**
      * Helper method to handle image upload
      */
@@ -551,12 +529,10 @@ public function updateSizeStock(Request $request, Product $product)
             if (!$imageFile->isValid()) {
                 throw new \Exception('File tidak valid');
             }
-
             // Delete old image if exists
             if ($oldImagePath && Storage::disk('public')->exists($oldImagePath)) {
                 Storage::disk('public')->delete($oldImagePath);
             }
-
             // Create unique filename
             $extension = $imageFile->getClientOriginalExtension();
             $filename = Str::random(20) . '_' . time() . '.' . $extension;
@@ -565,22 +541,16 @@ public function updateSizeStock(Request $request, Product $product)
             if (!Storage::disk('public')->exists('products')) {
                 Storage::disk('public')->makeDirectory('products');
             }
-
-            // Store the file
-            $imagePath = $imageFile->storeAs('products', $filename, 'public');
             
-            // Verify file was actually stored
-            if (!Storage::disk('public')->exists($imagePath)) {
-                throw new \Exception('File tidak tersimpan di storage');
-            }
+            // Store the image
+            $path = $imageFile->storeAs('products', $filename, 'public');
             
-            return $imagePath;
+            return $path;
             
         } catch (\Exception $e) {
             throw new \Exception('Upload gagal: ' . $e->getMessage());
         }
     }
-
     /**
      * Check if image exists and is accessible
      */
@@ -592,10 +562,8 @@ public function updateSizeStock(Request $request, Product $product)
                 'message' => 'Produk tidak memiliki gambar'
             ]);
         }
-
         $exists = Storage::disk('public')->exists($product->image);
         $url = $exists ? asset('storage/' . $product->image) : null;
-
         return response()->json([
             'exists' => $exists,
             'url' => $url,
@@ -603,7 +571,6 @@ public function updateSizeStock(Request $request, Product $product)
             'full_path' => storage_path('app/public/' . $product->image)
         ]);
     }
-
     /**
  * Get product sizes
  */
@@ -615,6 +582,4 @@ public function getProductSizes(Product $product)
         'product' => $product
     ]);
 }
-
-
 }

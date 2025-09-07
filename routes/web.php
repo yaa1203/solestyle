@@ -9,79 +9,158 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\KategoriController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PesananController;
 
+// ========================================
+// PUBLIC ROUTES (HANYA WELCOME)
+// ========================================
+
+// HANYA halaman utama yang bisa diakses tanpa login
 Route::get('/', function () {
     return view('welcome');
+})->name('welcome');
+
+// ========================================
+// AUTHENTICATION ROUTES (Guest only)
+// ========================================
+Route::middleware(['guest'])->group(function () {
+    Route::controller(AuthController::class)->group(function () {
+        Route::get('/register', 'showRegisterForm')->name('register.show');
+        Route::post('/register', 'register')->name('register');
+        Route::get('/login', 'showLoginForm')->name('login.show');
+        Route::post('/login', 'login')->name('login');
+    });
 });
 
-// Di web.php
-Route::resource('products', ProductController::class);
-Route::delete('products/destroy-multiple', [ProductController::class, 'destroyMultiple'])->name('products.destroy-multiple');
-Route::patch('products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
-Route::patch('products/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
-Route::get('products-export', [ProductController::class, 'export'])->name('products.export');
+// Logout route (harus sudah login)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+});
 
+// ========================================
+// USER AUTHENTICATED ROUTES
+// Semua halaman USER harus LOGIN dulu
+// ========================================
+Route::middleware(['auth'])->group(function () {
+    
+    // Dashboard User
+    Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
+    
+    // ===== PRODUK UNTUK USER =====
+    // User bisa lihat produk setelah login
     Route::get('produk', [ProdukController::class, 'index'])->name('produk.index');
     Route::get('/produk/{product}', [ProdukController::class, 'show'])->name('produk.show');
     
-    // API Routes for AJAX
+    // API untuk produk (hanya untuk user yang login)
     Route::get('/api/products', [ProdukController::class, 'apiProducts'])->name('produk.api');
     Route::get('/api/search-suggestions', [ProdukController::class, 'searchSuggestions'])->name('produk.search');
-    Route::patch('/products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
-Route::patch('/products/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
-Route::get('/products/{product}/sizes', [ProductController::class, 'getProductSizes'])->name('products.get-sizes');
-Route::patch('/products/{product}/update-size-stock', [ProductController::class, 'updateSizeStock'])->name('products.update-size-stock');
-Route::post('/products/{product}/set-primary-image', [ProductController::class, 'setPrimaryImage'])->name('products.set-primary-image');
+    
+    // ===== KATEGORI UNTUK USER =====
+    // User bisa lihat kategori setelah login
+    Route::get('kategori', [KategoriController::class, 'index'])->name('kategori.index');
+    Route::get('/kategori/api', [KategoriController::class, 'api'])->name('kategori.api');
+    Route::get('/kategori/{category}', [KategoriController::class, 'show'])->name('kategori.show');
+    
+    // ===== CART MANAGEMENT =====
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+    Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
+    Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
+    
+    // ===== CHECKOUT PROCESS =====
+    Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+    Route::post('/checkout', [CheckoutController::class, 'index'])->name('checkout.fromCart');
+    Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
+    Route::get('/order/success', [CheckoutController::class, 'success'])->name('order.success');
+    
+    // ===== USER ORDERS MANAGEMENT =====
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
+    Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::post('/orders/{id}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirmDelivery');
+    Route::post('/orders/{id}/reorder', [OrderController::class, 'reorder'])->name('orders.reorder');
+    Route::post('/orders/{id}/payment-proof', [OrderController::class, 'uploadPaymentProof'])->name('orders.uploadPaymentProof');
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
+    
+    // ===== ORDER TRACKING =====
+    // Sekarang order tracking juga harus login
+    Route::get('/order/track', [OrderController::class, 'trackForm'])->name('order.trackForm');
+    Route::post('/order/track', [OrderController::class, 'processTrack'])->name('order.processTrack');
+    Route::get('/order/track/{orderNumber}', [OrderController::class, 'track'])->name('order.track');
+});
 
-// Category resource routes
+// ========================================
+// ADMIN AUTHENTICATED ROUTES
+// Semua halaman ADMIN harus LOGIN + ROLE ADMIN
+// ========================================
+Route::middleware(['auth', 'admin'])->group(function () {
+    
+    // ===== ADMIN DASHBOARD =====
+    Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+    
+    // ===== PRODUCT MANAGEMENT (ADMIN) =====
+    Route::resource('products', ProductController::class);
+    Route::delete('products/destroy-multiple', [ProductController::class, 'destroyMultiple'])->name('products.destroy-multiple');
+    Route::patch('products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+    Route::patch('products/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
+    Route::get('products-export', [ProductController::class, 'export'])->name('products.export');
+    Route::get('/products/{product}/sizes', [ProductController::class, 'getProductSizes'])->name('products.get-sizes');
+    Route::patch('/products/{product}/update-size-stock', [ProductController::class, 'updateSizeStock'])->name('products.update-size-stock');
+    Route::post('/products/{product}/set-primary-image', [ProductController::class, 'setPrimaryImage'])->name('products.set-primary-image');
+    
+    // ===== CATEGORY MANAGEMENT (ADMIN) =====
     Route::resource('category', CategoryController::class);
+    Route::post('category/bulk-delete', [CategoryController::class, 'bulkDelete'])->name('category.bulk-delete');
+    Route::patch('category/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])->name('category.toggle-status');
+    Route::get('category/export/csv', [CategoryController::class, 'export'])->name('category.export');
+    Route::get('category/stats/data', [CategoryController::class, 'getStats'])->name('category.stats');
     
-    // Additional category routes
-    Route::post('category/bulk-delete', [CategoryController::class, 'bulkDelete'])
-        ->name('category.bulk-delete');
-    
-    Route::patch('category/{category}/toggle-status', [CategoryController::class, 'toggleStatus'])
-        ->name('category.toggle-status');
-    
-    Route::get('category/export/csv', [CategoryController::class, 'export'])
-        ->name('category.export');
-    
-    Route::get('category/stats/data', [CategoryController::class, 'getStats'])
-        ->name('category.stats');
+    // ===== ADMIN ORDER MANAGEMENT =====
+    Route::get('pesanan', [PesananController::class, 'Index'])->name('pesanan.index');
+    Route::get('/pesanan/{id}', [PesananController::class, 'Show'])->name('pesanan.show');
+    Route::post('/pesanan/{id}/update-status', [PesananController::class, 'updateStatus'])->name('pesanan.updateStatus');
+});
 
-// API Routes for AJAX requests
+// ========================================
+// ADMIN API ROUTES (dengan Sanctum Auth)
+// ========================================
 Route::middleware(['auth:sanctum', 'admin'])->prefix('api/admin')->name('api.admin.')->group(function () {
     Route::get('category/stats', [CategoryController::class, 'getStats']);
     Route::patch('category/{category}/toggle-status', [CategoryController::class, 'toggleStatus']);
 });
 
-// Atau jika ingin struktur URL yang lebih sederhana:
-Route::get('kategori', [KategoriController::class, 'index'])->name('kategori.index');
-Route::get('/kategori/api', [KategoriController::class, 'api'])->name('kategori.api');
-Route::get('/kategori/{category}', [KategoriController::class, 'show'])->name('kategori.show');
+// ========================================
+// FALLBACK & REDIRECT ROUTES
+// ========================================
 
-Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.update');
-Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
-Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
-Route::get('/cart/count', [CartController::class, 'count'])->name('cart.count');
-
-// Rute Otentikasi (Login & Register)
-Route::controller(AuthController::class)->group(function () {
-    Route::get('/register', 'showRegisterForm')->name('register.show');
-    Route::post('/register', 'register')->name('register');
-    Route::get('/login', 'showLoginForm')->name('login.show');
-    Route::post('/login', 'login')->name('login');
-    Route::post('/logout', 'logout')->name('logout');
+// Redirect otomatis ke login untuk URL yang membutuhkan auth
+Route::middleware(['web'])->group(function () {
+    // Jika user mencoba akses /admin tanpa login
+    Route::get('/admin{any?}', function () {
+        if (!auth()->check()) {
+            return redirect()->route('login.show')->with('error', 'Silakan login sebagai admin terlebih dahulu.');
+        }
+        if (!auth()->user()->is_admin) {
+            return redirect()->route('dashboard')->with('error', 'Akses ditolak. Anda bukan admin.');
+        }
+        return redirect()->route('admin.dashboard');
+    })->where('any', '.*');
 });
 
-// Rute Dashboard User (akses untuk semua yang sudah login)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'userDashboard'])->name('dashboard');
-});
-
-// Rute Dashboard Admin (akses khusus Admin)
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+// Fallback untuk semua route yang tidak ada
+Route::fallback(function () {
+    if (auth()->check()) {
+        // Jika sudah login tapi halaman tidak ada, ke dashboard
+        if (auth()->user()->is_admin) {
+            return redirect()->route('admin.dashboard')->with('error', 'Halaman tidak ditemukan.');
+        }
+        return redirect()->route('dashboard')->with('error', 'Halaman tidak ditemukan.');
+    }
+    
+    // Jika belum login, paksa ke login
+    return redirect()->route('login.show')->with('error', 'Silakan login terlebih dahulu untuk mengakses halaman ini.');
 });
