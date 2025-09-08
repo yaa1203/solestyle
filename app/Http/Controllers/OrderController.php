@@ -383,6 +383,16 @@ class OrderController extends Controller
         
         return $timeline;
     }
+
+    /**
+     * Show order failed page
+     */
+    public function failed($orderId)
+    {
+        $order = Order::with('orderItems')->findOrFail($orderId);
+        
+        return view('user.orders.failed', compact('order'));
+    }
     
     /**
      * Admin methods (if this controller also handles admin functions)

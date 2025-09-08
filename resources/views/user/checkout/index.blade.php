@@ -1,8 +1,9 @@
 @extends('user.layouts.app')
+
 @section('title', 'Checkout - SoleStyle')
+
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    
     <div class="mb-8">
         <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Checkout</h1>
         <p class="text-slate-400 mt-2">Selesaikan pemesanan Anda</p>
@@ -26,9 +27,9 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Nama Lengkap *</label>
                             <input type="text" name="customer_name" id="customer_name" required
-                                   value="{{ old('customer_name', auth()->user()->name ?? '') }}"
-                                   class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                   placeholder="Masukkan nama lengkap">
+                                  value="{{ old('customer_name', auth()->user()->name ?? '') }}"
+                                  class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                  placeholder="Masukkan nama lengkap">
                             @error('customer_name')
                                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -37,9 +38,9 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Email *</label>
                             <input type="email" name="customer_email" id="customer_email" required
-                                   value="{{ old('customer_email', auth()->user()->email ?? '') }}"
-                                   class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                   placeholder="email@example.com">
+                                  value="{{ old('customer_email', auth()->user()->email ?? '') }}"
+                                  class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                  placeholder="email@example.com">
                             @error('customer_email')
                                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -48,9 +49,9 @@
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-300 mb-2">Nomor Telepon *</label>
                             <input type="tel" name="customer_phone" id="customer_phone" required
-                                   value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
-                                   class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                   placeholder="08xxxxxxxxxx">
+                                  value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
+                                  class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                  placeholder="08xxxxxxxxxx">
                             @error('customer_phone')
                                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -80,25 +81,25 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Kota</label>
                                 <input type="text" name="city" 
-                                       value="{{ old('city') }}"
-                                       class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                       placeholder="Jakarta">
+                                      value="{{ old('city') }}"
+                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      placeholder="Jakarta">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Provinsi</label>
                                 <input type="text" name="province"
-                                       value="{{ old('province') }}"
-                                       class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                       placeholder="DKI Jakarta">
+                                      value="{{ old('province') }}"
+                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      placeholder="DKI Jakarta">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Kode Pos</label>
                                 <input type="text" name="postal_code"
-                                       value="{{ old('postal_code') }}"
-                                       class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                       placeholder="12345">
+                                      value="{{ old('postal_code') }}"
+                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      placeholder="12345">
                             </div>
                         </div>
                     </div>
@@ -113,17 +114,6 @@
                     
                     <div class="space-y-3">
                         <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="bank_transfer" class="text-purple-600 mr-4" checked>
-                            <div class="flex items-center flex-1">
-                                <i class="fas fa-university text-blue-400 mr-3"></i>
-                                <div>
-                                    <p class="text-white font-medium">Transfer Bank</p>
-                                    <p class="text-slate-400 text-sm">BCA, Mandiri, BNI, BRI</p>
-                                </div>
-                            </div>
-                        </label>
-                        
-                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
                             <input type="radio" name="payment_method" value="cod" class="text-purple-600 mr-4">
                             <div class="flex items-center flex-1">
                                 <i class="fas fa-money-bill-wave text-green-400 mr-3"></i>
@@ -135,18 +125,39 @@
                         </label>
                         
                         <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="credit_card" class="text-purple-600 mr-4">
+                            <input type="radio" name="payment_method" value="dana" class="text-purple-600 mr-4">
                             <div class="flex items-center flex-1">
-                                <i class="fas fa-credit-card text-purple-400 mr-3"></i>
+                                <i class="fas fa-wallet text-blue-400 mr-3"></i>
                                 <div>
-                                    <p class="text-white font-medium">Kartu Kredit/Debit</p>
-                                    <p class="text-slate-400 text-sm">Visa, Mastercard, JCB</p>
+                                    <p class="text-white font-medium">DANA</p>
+                                    <p class="text-slate-400 text-sm">E-wallet terpopuler di Indonesia</p>
+                                </div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
+                            <input type="radio" name="payment_method" value="ovo" class="text-purple-600 mr-4">
+                            <div class="flex items-center flex-1">
+                                <i class="fas fa-wallet text-purple-400 mr-3"></i>
+                                <div>
+                                    <p class="text-white font-medium">OVO</p>
+                                    <p class="text-slate-400 text-sm">E-wallet praktis dan mudah</p>
+                                </div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
+                            <input type="radio" name="payment_method" value="gopay" class="text-purple-600 mr-4">
+                            <div class="flex items-center flex-1">
+                                <i class="fas fa-mobile-alt text-green-400 mr-3"></i>
+                                <div>
+                                    <p class="text-white font-medium">GoPay</p>
+                                    <p class="text-slate-400 text-sm">E-wallet dari Gojek</p>
                                 </div>
                             </div>
                         </label>
                     </div>
-                </div>
-                
+                </div> 
             </div>
             
             <!-- Right Column: Order Summary -->

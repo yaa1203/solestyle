@@ -6,6 +6,7 @@ use App\Models\Cart;
 use App\Models\Product;
 use App\Models\ProductSize;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -195,7 +196,7 @@ class CheckoutController extends Controller
             'city' => 'nullable|string|max:100',
             'province' => 'nullable|string|max:100',
             'postal_code' => 'nullable|string|max:10',
-            'payment_method' => 'required|string|in:bank_transfer,cod,credit_card',
+            'payment_method' => 'required|string|in:cod,dana,ovo,gopay',
             'order_notes' => 'nullable|string|max:1000',
         ]);
         
@@ -269,7 +270,7 @@ class CheckoutController extends Controller
                 'shipping_cost' => $shippingCost,
                 'promo_discount' => $promoDiscount,
                 'total' => $total,
-                'status' => 'pending_payment',
+                'status' => $request->payment_method === 'cod' ? 'pending' : 'pending_payment',
                 'order_notes' => $request->order_notes,
                 'order_date' => now(),
             ]);
@@ -287,6 +288,15 @@ class CheckoutController extends Controller
                     'subtotal' => $item['subtotal'],
                 ]);
             }
+            
+            // Create payment record
+            $payment = Payment::create([
+                'order_id' => $order->id,
+                'payment_method' => $request->payment_method,
+                'amount' => $total,
+                'status' => $request->payment_method === 'cod' ? 'pending' : 'pending',
+                'transaction_id' => null,
+            ]);
             
             // Update product stock
             foreach ($request->items as $itemData) {
@@ -310,10 +320,23 @@ class CheckoutController extends Controller
             // Store order ID in session for success page
             session(['last_order_id' => $order->id]);
             
+            // For COD, redirect to success page directly
+            if ($request->payment_method === 'cod') {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order berhasil dibuat',
+                    'redirect_url' => route('order.success')
+                ]);
+            }
+            
+            // For e-wallet, redirect to payment page
             return response()->json([
                 'success' => true,
-                'message' => 'Order berhasil diproses',
-                'redirect_url' => route('order.success')
+                'message' => 'Redirecting to payment page',
+                'redirect_url' => route('payment.e-wallet', [
+                    'order_id' => $order->id,
+                    'payment_method' => $request->payment_method
+                ])
             ]);
             
         } catch (\Exception $e) {

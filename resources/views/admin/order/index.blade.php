@@ -1,3 +1,4 @@
+<!-- resources/views/admin/order/index.blade.php -->
 @extends('admin.layouts.app')
 
 @section('title', 'Kelola Pesanan - Admin SoleStyle')
@@ -145,18 +146,20 @@
                                         <i class="fas fa-ellipsis-v"></i>
                                     </button>
                                     
+                                    <!-- resources/views/admin/order/index.blade.php -->
+                                    <!-- Di dalam dropdown action -->
                                     <div id="dropdown-{{ $order->id }}" class="absolute right-0 mt-2 w-48 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-10 hidden">
                                         <div class="py-1">
                                             <a href="{{ route('order.show', $order->id) }}" 
-                                               class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600">
+                                            class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600">
                                                 <i class="fas fa-eye mr-2"></i>Lihat Detail
                                             </a>
                                             <button onclick="updateStatus({{ $order->id }})" 
                                                     class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600">
                                                 <i class="fas fa-edit mr-2"></i>Update Status
                                             </button>
-                                            @if($order->payment_proof)
-                                            <button onclick="viewPaymentProof('{{ asset('storage/' . $order->payment_proof) }}')" 
+                                            @if($order->payment_proof || ($order->payment && $order->payment->receipt_path))
+                                            <button onclick="viewPaymentProof({{ $order->id }})" 
                                                     class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-slate-600">
                                                 <i class="fas fa-image mr-2"></i>Lihat Bukti Bayar
                                             </button>
@@ -421,18 +424,122 @@ document.getElementById('updateStatusForm').addEventListener('submit', function(
     });
 });
 
-// View payment proof
-function viewPaymentProof(imageUrl) {
-    document.getElementById('paymentProofImage').src = imageUrl;
-    document.getElementById('paymentProofModal').classList.remove('hidden');
+// Improved JavaScript for Payment Proof functionality
+
+// View payment proof with better error handling
+function viewPaymentProof(orderId) {
+    console.log('Viewing payment proof for order ID:', orderId);
+    
+    // Show loading state
+    showNotification('Memuat bukti pembayaran...', 'info');
+    
+    fetch(`/admin/orders/${orderId}/payment-proof`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        console.log('Response headers:', [...response.headers.entries()]);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
+    })
+    .then(data => {
+        console.log('Payment proof response:', data);
+        
+        if (data.success) {
+            // Set the image source
+            const imgElement = document.getElementById('paymentProofImage');
+            
+            // Handle image load error
+            imgElement.onerror = function() {
+                console.error('Failed to load image:', data.image_url);
+                showNotification('Gagal memuat gambar bukti pembayaran', 'error');
+                closePaymentProofModal();
+            };
+            
+            // Handle image load success
+            imgElement.onload = function() {
+                console.log('Image loaded successfully');
+            };
+            
+            imgElement.src = data.image_url;
+            imgElement.alt = `Bukti Pembayaran - ${data.order_number}`;
+            
+            // Show the modal
+            document.getElementById('paymentProofModal').classList.remove('hidden');
+            
+            // Add additional info if available
+            if (data.source) {
+                console.log('Payment proof source:', data.source);
+            }
+            
+        } else {
+            console.error('Payment proof error:', data.message);
+            showNotification(data.message || 'Gagal memuat bukti pembayaran', 'error');
+            
+            // Show debug info if available
+            if (data.debug_info) {
+                console.error('Debug info:', data.debug_info);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Fetch error:', error);
+        showNotification('Terjadi kesalahan saat memuat bukti pembayaran', 'error');
+    });
 }
 
+// Debug function to check payment proof
+function debugPaymentProof(orderId) {
+    console.log('Debugging payment proof for order ID:', orderId);
+    
+    fetch(`/admin/orders/${orderId}/debug-payment-proof`, {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Debug payment proof data:', data);
+        
+        // You can display this info in console or create a debug modal
+        alert('Debug info logged to console. Check browser developer tools.');
+    })
+    .catch(error => {
+        console.error('Debug error:', error);
+    });
+}
+
+// Close payment proof modal
 function closePaymentProofModal() {
-    document.getElementById('paymentProofModal').classList.add('hidden');
+    const modal = document.getElementById('paymentProofModal');
+    const imgElement = document.getElementById('paymentProofImage');
+    
+    // Clear the image source to stop loading
+    imgElement.src = '';
+    imgElement.alt = '';
+    
+    // Hide the modal
+    modal.classList.add('hidden');
 }
 
-// Notification function
+// Enhanced notification function with better styling
 function showNotification(message, type = 'info') {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.notification-toast');
+    existingNotifications.forEach(notification => notification.remove());
+    
     const colors = {
         success: 'from-green-500 to-emerald-500',
         error: 'from-red-500 to-pink-500',
@@ -448,21 +555,76 @@ function showNotification(message, type = 'info') {
     };
     
     const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
+    toast.className = `notification-toast fixed top-4 right-4 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-lg z-50 transform translate-x-full transition-transform duration-300 max-w-md`;
     toast.innerHTML = `
         <div class="flex items-center space-x-3">
-            <i class="fas ${icons[type]}"></i>
-            <span>${message}</span>
+            <i class="fas ${icons[type]} flex-shrink-0"></i>
+            <span class="break-words">${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white/80 hover:text-white">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     `;
     
     document.body.appendChild(toast);
     
+    // Animate in
     setTimeout(() => toast.classList.remove('translate-x-full'), 100);
+    
+    // Auto-remove after 5 seconds (unless it's an error, keep it longer)
+    const autoRemoveTime = type === 'error' ? 8000 : 5000;
     setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => document.body.removeChild(toast), 300);
-    }, 4000);
+        if (toast.parentElement) {
+            toast.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 300);
+        }
+    }, autoRemoveTime);
+}
+
+// Improved modal handling
+document.addEventListener('DOMContentLoaded', function() {
+    // Close modal when clicking outside
+    document.getElementById('paymentProofModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePaymentProofModal();
+        }
+    });
+    
+    // Close modal with ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('paymentProofModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closePaymentProofModal();
+            }
+        }
+    });
+});
+
+// Test function to check if the payment proof feature is working
+function testPaymentProofFeature() {
+    console.log('Testing payment proof feature...');
+    
+    // Check if required elements exist
+    const modal = document.getElementById('paymentProofModal');
+    const img = document.getElementById('paymentProofImage');
+    
+    if (!modal) {
+        console.error('Payment proof modal not found');
+        return false;
+    }
+    
+    if (!img) {
+        console.error('Payment proof image element not found');
+        return false;
+    }
+    
+    console.log('Payment proof elements found successfully');
+    return true;
 }
 </script>
 @endsection

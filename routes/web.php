@@ -11,6 +11,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\AdminOrderController;
 
 // ========================================
 // PUBLIC ROUTES (HANYA WELCOME)
@@ -75,6 +77,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/checkout', [CheckoutController::class, 'index'])->name('checkout.fromCart');
     Route::post('/checkout/process', [CheckoutController::class, 'process'])->name('checkout.process');
     Route::get('/order/success', [CheckoutController::class, 'success'])->name('order.success');
+
+    // E-wallet payment routes
+    Route::get('/payment/e-wallet/{order_id}/{payment_method}', [PaymentController::class, 'eWallet'])
+        ->name('payment.e-wallet')
+        ->middleware('auth');
+
+    Route::post('/payment/e-wallet/callback', [PaymentController::class, 'eWalletCallback'])
+        ->name('payment.ewallet.callback');
+
+    Route::post('/payment/simulate', [PaymentController::class, 'simulateEWalletPayment'])
+        ->name('payment.simulate')
+        ->middleware('auth');
+    Route::get('/payment/check/{order_id}', [ApiController::class, 'checkPaymentStatus']);
+    Route::get('/order/failed/{order_id}', [OrderController::class, 'failed'])->name('order.failed');
+    Route::post('/payment/upload-receipt', [PaymentController::class, 'uploadReceipt'])->name('payment.upload.receipt');
     
     // ===== USER ORDERS MANAGEMENT =====
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
@@ -119,10 +136,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('category/stats/data', [CategoryController::class, 'getStats'])->name('category.stats');
     
     // Admin Order Management Routes
-    Route::get('order', [OrderController::class, 'adminIndex'])->name('order.index');
-    Route::get('/order/{id}', [OrderController::class, 'adminShow'])->name('order.show');
-    Route::post('/order/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.update-status');
-    Route::get('/order/{id}/invoice', [OrderController::class, 'adminInvoice'])->name('order.invoice');
+    Route::resource('order', AdminOrderController::class);
+    Route::get('order/{order}/update-status', [AdminOrderController::class, 'updateStatus'])->name('order.update-status');
+    Route::get('order/{order}/payment-proof', [AdminOrderController::class, 'viewPaymentProof'])->name('order.payment-proof');
+    Route::get('order/stats', [AdminOrderController::class, 'getOrderStats'])->name('order.stats');
 });
 
 // ========================================

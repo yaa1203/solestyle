@@ -1,249 +1,390 @@
+<!-- resources/views/admin/order/show.blade.php -->
 @extends('admin.layouts.app')
 
-@section('title', 'Detail Pesanan - SoleStyle Admin')
+@section('title', 'Detail Pesanan - Admin SoleStyle')
 
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
     <div class="mb-8">
         <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Detail Pesanan
+            Detail Pesanan #{{ $order->order_number }}
         </h1>
-        <p class="text-slate-400 mt-2">Informasi lengkap pesanan #{{ $order->order_number }}</p>
+        <p class="text-slate-400 mt-2">Informasi lengkap pesanan dari customer</p>
     </div>
     
-    <!-- Order Info Card -->
-    <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Order Details -->
-            <div>
-                <h3 class="text-lg font-semibold text-white mb-4">Detail Pesanan</h3>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Order Details -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Customer Information -->
+            <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-user text-purple-400 mr-3"></i>
+                    Informasi Pembeli
+                </h3>
+                
                 <div class="space-y-3">
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Nomor Pesanan:</span>
-                        <span class="text-white font-medium">#{{ $order->order_number }}</span>
+                        <span class="text-slate-400">Nama:</span>
+                        <span class="text-white font-medium">{{ $order->customer_name }}</span>
                     </div>
+                    
                     <div class="flex justify-between">
-                        <span class="text-slate-400">Tanggal Pesanan:</span>
-                        <span class="text-white">{{ $order->order_date->format('d M Y, H:i') }}</span>
+                        <span class="text-slate-400">Email:</span>
+                        <span class="text-white font-medium">{{ $order->customer_email }}</span>
                     </div>
+                    
+                    @if($order->customer_phone)
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Telepon:</span>
+                        <span class="text-white font-medium">{{ $order->customer_phone }}</span>
+                    </div>
+                    @endif
+                    
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Metode Pembayaran:</span>
+                        <span class="text-white font-medium">{{ $order->payment_method_label }}</span>
+                    </div>
+                    
                     <div class="flex justify-between">
                         <span class="text-slate-400">Status:</span>
                         <span class="px-3 py-1 bg-{{ $order->status_color }}-500/20 text-{{ $order->status_color }}-400 rounded-full text-sm font-medium">
                             {{ $order->status_label }}
                         </span>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Metode Pembayaran:</span>
-                        <span class="text-white">{{ $order->payment_method_label }}</span>
-                    </div>
-                    @if($order->payment_date)
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Tanggal Pembayaran:</span>
-                        <span class="text-white">{{ $order->payment_date->format('d M Y, H:i') }}</span>
-                    </div>
-                    @endif
-                    @if($order->shipped_date)
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Tanggal Pengiriman:</span>
-                        <span class="text-white">{{ $order->shipped_date->format('d M Y, H:i') }}</span>
-                    </div>
-                    @endif
-                    @if($order->delivered_date)
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Tanggal Selesai:</span>
-                        <span class="text-white">{{ $order->delivered_date->format('d M Y, H:i') }}</span>
-                    </div>
-                    @endif
                 </div>
             </div>
             
-            <!-- Customer Details -->
-            <div>
-                <h3 class="text-lg font-semibold text-white mb-4">Detail Pelanggan</h3>
+            <!-- Shipping Information -->
+            <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-truck text-purple-400 mr-3"></i>
+                    Alamat Pengiriman
+                </h3>
+                
                 <div class="space-y-3">
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Nama:</span>
-                        <span class="text-white">{{ $order->customer_name }}</span>
+                    <div class="mb-4">
+                        <p class="text-white">{{ $order->shipping_address }}</p>
                     </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Email:</span>
-                        <span class="text-white">{{ $order->customer_email }}</span>
-                    </div>
-                    @if($order->customer_phone)
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Telepon:</span>
-                        <span class="text-white">{{ $order->customer_phone }}</span>
-                    </div>
-                    @endif
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Alamat:</span>
-                        <span class="text-white">{{ $order->customer_address }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Kota:</span>
-                        <span class="text-white">{{ $order->customer_city }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Provinsi:</span>
-                        <span class="text-white">{{ $order->customer_province }}</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-slate-400">Kode Pos:</span>
-                        <span class="text-white">{{ $order->customer_postal_code }}</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Admin Notes -->
-        @if($order->admin_notes)
-        <div class="mt-6">
-            <h3 class="text-lg font-semibold text-white mb-2">Catatan Admin</h3>
-            <div class="bg-slate-700/50 rounded-lg p-4">
-                <p class="text-white">{{ nl2br(e($order->admin_notes)) }}</p>
-            </div>
-        </div>
-        @endif
-        
-        <!-- Payment Proof -->
-        @if($order->payment_proof)
-        <div class="mt-6">
-            <h3 class="text-lg font-semibold text-white mb-2">Bukti Pembayaran</h3>
-            <div class="bg-slate-700/50 rounded-lg p-4">
-                <img src="{{ asset('storage/' . $order->payment_proof) }}" alt="Bukti Pembayaran" class="max-w-full h-auto rounded-lg mb-2">
-                @if($order->payment_notes)
-                <p class="text-white text-sm">{{ nl2br(e($order->payment_notes)) }}</p>
-                @endif
-            </div>
-        </div>
-        @endif
-        
-        <!-- Tracking Number -->
-        @if($order->tracking_number)
-        <div class="mt-6">
-            <h3 class="text-lg font-semibold text-white mb-2">Nomor Resi</h3>
-            <div class="bg-slate-700/50 rounded-lg p-4">
-                <p class="text-white">{{ $order->tracking_number }}</p>
-                <a href="https://tracking.courier.com/{{ $order->tracking_number }}" target="_blank" 
-                   class="text-blue-400 hover:text-blue-300 text-sm mt-2 inline-block">
-                    <i class="fas fa-external-link-alt mr-1"></i>Lacak Pengiriman
-                </a>
-            </div>
-        </div>
-        @endif
-    </div>
-    
-    <!-- Order Items -->
-    <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 mb-8">
-        <h3 class="text-lg font-semibold text-white mb-4">Item Pesanan</h3>
-        <div class="space-y-4">
-            @foreach($order->orderItems as $item)
-            <div class="flex items-center gap-4 bg-slate-700/50 rounded-lg p-4">
-                <div class="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden">
-                    @if($item->image_url)
-                        <img src="{{ $item->image_url }}" alt="{{ $item->product_name }}" 
-                             class="w-full h-full object-cover">
-                    @else
-                        <div class="w-full h-full bg-slate-600 flex items-center justify-center">
-                            <i class="fas fa-image text-slate-400"></i>
+                    
+                    <div class="flex flex-wrap gap-4">
+                        @if($order->city)
+                        <div>
+                            <span class="text-slate-400">Kota:</span>
+                            <span class="text-white ml-2">{{ $order->city }}</span>
                         </div>
+                        @endif
+                        
+                        @if($order->province)
+                        <div>
+                            <span class="text-slate-400">Provinsi:</span>
+                            <span class="text-white ml-2">{{ $order->province }}</span>
+                        </div>
+                        @endif
+                        
+                        @if($order->postal_code)
+                        <div>
+                            <span class="text-slate-400">Kode Pos:</span>
+                            <span class="text-white ml-2">{{ $order->postal_code }}</span>
+                        </div>
+                        @endif
+                    </div>
+                    
+                    @if($order->tracking_number)
+                    <div class="mt-4 pt-4 border-t border-slate-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-truck text-purple-400 mr-2"></i>
+                            <span class="text-slate-400">Nomor Resi:</span>
+                            <span class="text-white ml-2 font-mono">{{ $order->tracking_number }}</span>
+                        </div>
+                    </div>
                     @endif
                 </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-shopping-bag text-purple-400 mr-3"></i>
+                    Item Pesanan
+                </h3>
                 
-                <div class="flex-1 min-w-0">
-                    <h4 class="font-medium text-white truncate">{{ $item->product_name }}</h4>
-                    <p class="text-sm text-slate-400">
-                        @if($item->size_display !== 'N/A')
-                            Size: {{ $item->size_display }} • 
-                        @endif
-                        Qty: {{ $item->quantity }}
-                    </p>
-                </div>
-                
-                <div class="text-right">
-                    <p class="font-medium text-white">{{ $item->formatted_subtotal }}</p>
+                <div class="space-y-4">
+                    @foreach($order->orderItems as $item)
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                            @if($item->image_url)
+                                <img src="{{ $item->image_url }}" alt="{{ $item->product_name }}" 
+                                     class="w-full h-full object-cover">
+                            @else
+                                <div class="w-full h-full bg-slate-600 flex items-center justify-center">
+                                    <i class="fas fa-image text-slate-400"></i>
+                                </div>
+                            @endif
+                        </div>
+                        
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-white">{{ $item->product_name }}</h4>
+                            <p class="text-sm text-slate-400">
+                                @if($item->size_display !== 'N/A')
+                                    Size: {{ $item->size_display }} • 
+                                @endif
+                                Qty: {{ $item->quantity }} • {{ $item->formatted_price }}
+                            </p>
+                        </div>
+                        
+                        <div class="text-right">
+                            <p class="font-medium text-white">{{ $item->formatted_subtotal }}</p>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
             </div>
-            @endforeach
+            
+            <!-- Timeline -->
+            <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6">
+                <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+                    <i class="fas fa-timeline text-purple-400 mr-3"></i>
+                    Timeline Pesanan
+                </h3>
+                
+                <div class="space-y-4">
+                    @foreach($timeline as $event)
+                    <div class="flex gap-4">
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center
+                                {{ $event['status'] === 'completed' ? 'bg-green-500/20 text-green-400' : 
+                                ($event['status'] === 'current' ? 'bg-purple-500/20 text-purple-400' : 'bg-slate-700/50 text-slate-500') }}">
+                                <i class="{{ $event['icon'] }}"></i>
+                            </div>
+                            <div class="w-0.5 h-full bg-slate-700 mt-2"></div>
+                        </div>
+                        
+                        <div class="flex-1 pb-4">
+                            <h4 class="font-medium text-white">{{ $event['title'] }}</h4>
+                            <p class="text-sm text-slate-400 mt-1">{{ $event['description'] }}</p>
+                            @if($event['date'])
+                            <p class="text-xs text-slate-500 mt-1">
+                                {{ $event['date']->format('d M Y, H:i') }}
+                            </p>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
         
-        <!-- Order Summary -->
-        <div class="mt-6 pt-6 border-t border-slate-700">
-            <div class="flex justify-between items-center">
-                <div class="text-sm text-slate-400">
-                    {{ $order->orderItems->count() }} item
+        <!-- Right Column: Order Summary & Actions -->
+        <div class="lg:col-span-1">
+            <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl shadow-xl p-6 sticky top-24">
+                <h3 class="text-xl font-semibold text-white mb-6 flex items-center">
+                    <i class="fas fa-receipt text-purple-400 mr-3"></i>
+                    Ringkasan Pesanan
+                </h3>
+                
+                <!-- Price Breakdown -->
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Subtotal</span>
+                        <span class="text-white">{{ $order->formatted_subtotal }}</span>
+                    </div>
+                    
+                    @if($order->promo_discount > 0)
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Diskon</span>
+                        <span class="text-green-400">-{{ $order->formatted_promo_discount }}</span>
+                    </div>
+                    @endif
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Ongkos Kirim</span>
+                        <span class="text-white">{{ $order->formatted_shipping_cost }}</span>
+                    </div>
+                    
+                    <div class="flex justify-between text-sm">
+                        <span class="text-slate-300">Pajak</span>
+                        <span class="text-white">{{ $order->formatted_tax }}</span>
+                    </div>
+                    
+                    <hr class="border-slate-600">
+                    
+                    <div class="flex justify-between">
+                        <span class="font-bold text-white text-lg">Total</span>
+                        <span class="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{{ $order->formatted_total }}</span>
+                    </div>
                 </div>
-                <div class="text-right">
-                    <p class="text-xl font-bold text-white">{{ $order->formatted_total }}</p>
+                
+                <!-- resources/views/admin/order/show.blade.php -->
+                <!-- Payment Information -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-slate-300 mb-3">Informasi Pembayaran</h4>
+                    
+                    <div class="space-y-2">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Metode:</span>
+                            <span class="text-white">{{ $order->payment_method_label }}</span>
+                        </div>
+                        
+                        @if($order->payment_date)
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Tanggal Bayar:</span>
+                            <span class="text-white">{{ $order->payment_date->format('d M Y, H:i') }}</span>
+                        </div>
+                        @endif
+                        
+                        @if($order->payment_proof || ($order->payment && $order->payment->receipt_path))
+                        <div class="flex justify-between text-sm">
+                            <span class="text-slate-400">Bukti Bayar:</span>
+                            <button onclick="viewPaymentProof({{ $order->id }})" 
+                                    class="text-purple-400 hover:text-purple-300">
+                                <i class="fas fa-eye mr-1"></i>Lihat
+                            </button>
+                        </div>
+                        @endif
+                    </div>
+                </div>   
+                
+                <!-- Order Notes -->
+                @if($order->admin_notes)
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-slate-300 mb-3">Catatan Admin</h4>
+                    <div class="bg-slate-700/30 rounded-lg p-3">
+                        <p class="text-sm text-white">{{ $order->admin_notes }}</p>
+                    </div>
+                </div>
+                @endif
+                
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                    <a href="{{ route('order.index') }}" 
+                       class="block w-full text-center py-3 border-2 border-slate-500/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-400 rounded-lg font-medium transition-all">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        Kembali ke Daftar Pesanan
+                    </a>
+
+                    <button onclick="updateStatus({{ $order->id }})" 
+                            class="block w-full text-center py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-edit mr-2"></i>
+                        Update Status
+                    </button>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- Update Status Form -->
-    <div class="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-        <h3 class="text-lg font-semibold text-white mb-4">Update Status</h3>
-        <form id="updateStatusForm" class="space-y-4">
-            <input type="hidden" name="order_id" value="{{ $order->id }}">
-            
-            <div>
-                <label class="block text-sm font-medium text-slate-300 mb-2">Status</label>
-                <select name="status" id="statusSelect" class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
-                    <option value="pending_payment" {{ $order->status === 'pending_payment' ? 'selected' : '' }}>Menunggu Pembayaran</option>
-                    <option value="paid" {{ $order->status === 'paid' ? 'selected' : '' }}>Dibayar</option>
-                    <option value="processing" {{ $order->status === 'processing' ? 'selected' : '' }}>Dikemas</option>
-                    <option value="shipped" {{ $order->status === 'shipped' ? 'selected' : '' }}>Dikirim</option>
-                    <option value="delivered" {{ $order->status === 'delivered' ? 'selected' : '' }}>Selesai</option>
-                    <option value="cancelled" {{ $order->status === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
-                </select>
-            </div>
-            
-            <div id="trackingNumberField" class="hidden">
-                <label class="block text-sm font-medium text-slate-300 mb-2">Nomor Resi (untuk status Dikirim)</label>
-                <input type="text" name="tracking_number" value="{{ $order->tracking_number }}" 
-                       placeholder="Masukkan nomor resi pengiriman"
-                       class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-slate-300 mb-2">Catatan Admin</label>
-                <textarea name="admin_notes" rows="3" placeholder="Tambahkan catatan jika diperlukan..."
-                          class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 resize-none">{{ $order->admin_notes }}</textarea>
-            </div>
-            
-            <div class="flex gap-3">
-                <button type="button" onclick="window.history.back()" 
-                        class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-medium transition-all">
-                    Kembali
-                </button>
-                <button type="submit" 
-                        class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 rounded-lg font-medium transition-all">
-                    Update Status
+</div>
+
+<!-- Update Status Modal -->
+<div id="updateStatusModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-white">Update Status Pesanan</h3>
+                <button onclick="closeUpdateStatusModal()" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
-        </form>
+            
+            <form id="updateStatusForm">
+                <input type="hidden" id="updateOrderId" name="order_id">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Status Baru *</label>
+                    <select name="status" id="newStatus" required
+                            class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
+                        <option value="">Pilih Status</option>
+                        <option value="pending_payment">Menunggu Pembayaran</option>
+                        <option value="paid">Dibayar</option>
+                        <option value="processing">Dikemas</option>
+                        <option value="shipped">Dikirim</option>
+                        <option value="delivered">Selesai</option>
+                        <option value="cancelled">Dibatalkan</option>
+                    </select>
+                </div>
+                
+                <div class="mb-4" id="trackingNumberDiv" style="display: none;">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Nomor Resi</label>
+                    <input type="text" name="tracking_number" id="trackingNumber"
+                           class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400"
+                           placeholder="Masukkan nomor resi pengiriman">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-slate-300 mb-2">Catatan Admin</label>
+                    <textarea name="admin_notes" rows="3" placeholder="Catatan tambahan..."
+                              class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 resize-none"></textarea>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button type="button" onclick="closeUpdateStatusModal()" 
+                            class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-medium transition-all">
+                        Batal
+                    </button>
+                    <button type="submit" 
+                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 rounded-lg font-medium transition-all">
+                        <span id="updateSubmitText">Update</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Proof Modal -->
+<div id="paymentProofModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-2xl w-full p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-semibold text-white">Bukti Pembayaran</h3>
+                <button onclick="closePaymentProofModal()" class="text-slate-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <img id="paymentProofImage" src="" alt="Bukti Pembayaran" 
+                     class="max-w-full h-auto rounded-lg shadow-lg mx-auto">
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+// Update status modal
+function updateStatus(orderId) {
+    document.getElementById('updateOrderId').value = orderId;
+    document.getElementById('updateStatusModal').classList.remove('hidden');
+    
+    // Reset form
+    document.getElementById('updateStatusForm').reset();
+    document.getElementById('trackingNumberDiv').style.display = 'none';
+}
+
+function closeUpdateStatusModal() {
+    document.getElementById('updateStatusModal').classList.add('hidden');
+}
+
 // Show/hide tracking number field based on status
-document.getElementById('statusSelect').addEventListener('change', function() {
-    const trackingField = document.getElementById('trackingNumberField');
+document.getElementById('newStatus').addEventListener('change', function() {
+    const trackingDiv = document.getElementById('trackingNumberDiv');
     if (this.value === 'shipped') {
-        trackingField.classList.remove('hidden');
+        trackingDiv.style.display = 'block';
     } else {
-        trackingField.classList.add('hidden');
+        trackingDiv.style.display = 'none';
     }
 });
 
-// Handle Update Status Form Submit
+// Handle update status form
 document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     const formData = new FormData(this);
+    const orderId = document.getElementById('updateOrderId').value;
+    const submitButton = document.getElementById('updateSubmitText');
     
-    fetch(`/admin/orders/{{ $order->id }}/update-status`, {
+    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    
+    fetch(`/admin/orders/${orderId}/update-status`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -254,6 +395,7 @@ document.getElementById('updateStatusForm').addEventListener('submit', function(
     .then(data => {
         if (data.success) {
             showNotification(data.message, 'success');
+            closeUpdateStatusModal();
             setTimeout(() => location.reload(), 1500);
         } else {
             showNotification(data.message, 'error');
@@ -261,9 +403,36 @@ document.getElementById('updateStatusForm').addEventListener('submit', function(
     })
     .catch(error => {
         console.error('Error:', error);
-        showNotification('Terjadi kesalahan saat mengupdate status', 'error');
+        showNotification('Gagal mengupdate status pesanan', 'error');
+    })
+    .finally(() => {
+        submitButton.innerHTML = 'Update';
     });
 });
+
+// View payment proof
+function viewPaymentProof(orderId) {
+    fetch(`/admin/orders/${orderId}/payment-proof`)
+        .then(response => response.json())
+        .then(data => {
+            console.log('Payment proof response:', data); // Debug log
+            
+            if (data.success) {
+                document.getElementById('paymentProofImage').src = data.image_url;
+                document.getElementById('paymentProofModal').classList.remove('hidden');
+            } else {
+                showNotification(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Gagal memuat bukti pembayaran', 'error');
+        });
+}
+
+function closePaymentProofModal() {
+    document.getElementById('paymentProofModal').classList.add('hidden');
+}
 
 // Notification function
 function showNotification(message, type = 'info') {

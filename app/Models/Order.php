@@ -32,6 +32,7 @@ class Order extends Model
         'payment_date',
         'shipped_date',
         'delivered_date',
+        'payment_proof',
     ];
 
     protected $casts = [
@@ -45,6 +46,11 @@ class Order extends Model
         'shipped_date' => 'datetime',
         'delivered_date' => 'datetime',
     ];
+
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
+    }
 
     // Relationships
     public function user()
@@ -115,13 +121,16 @@ class Order extends Model
 
     public function getPaymentMethodLabelAttribute()
     {
-        $methods = [
+        $labels = [
+            'cod' => 'Cash on Delivery',
             'bank_transfer' => 'Transfer Bank',
-            'cod' => 'Cash on Delivery (COD)',
-            'credit_card' => 'Kartu Kredit/Debit',
+            'credit_card' => 'Kartu Kredit',
+            'dana' => 'DANA',
+            'ovo' => 'OVO',
+            'gopay' => 'GoPay',
         ];
-
-        return $methods[$this->payment_method] ?? $this->payment_method;
+        
+        return $labels[$this->payment_method] ?? $this->payment_method;
     }
 
     public function getShippingEstimateAttribute()
