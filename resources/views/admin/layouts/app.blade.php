@@ -121,7 +121,7 @@
             </a>
           </li>
           <li>
-            <a href="{{ url('pesanan') }}" class="nav-item {{ request()->routeIs('pesanan.*') ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-700/50">
+            <a href="{{ url('order') }}" class="nav-item {{ request()->routeIs('order.*') ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-700/50">
               <i class="fas fa-shopping-cart w-5 text-center"></i>
               <span class="sidebar-text">Pesanan</span>
               @if(isset($pendingOrdersCount) && $pendingOrdersCount > 0)

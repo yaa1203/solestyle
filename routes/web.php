@@ -118,10 +118,11 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('category/export/csv', [CategoryController::class, 'export'])->name('category.export');
     Route::get('category/stats/data', [CategoryController::class, 'getStats'])->name('category.stats');
     
-    // // ===== ADMIN ORDER MANAGEMENT =====
-    // Route::get('pesanan', [PesananController::class, 'Index'])->name('pesanan.index');
-    // Route::get('/pesanan/{id}', [PesananController::class, 'Show'])->name('pesanan.show');
-    // Route::post('/pesanan/{id}/update-status', [PesananController::class, 'updateStatus'])->name('pesanan.updateStatus');
+    // Admin Order Management Routes
+    Route::get('order', [OrderController::class, 'adminIndex'])->name('order.index');
+    Route::get('/order/{id}', [OrderController::class, 'adminShow'])->name('order.show');
+    Route::post('/order/{id}/update-status', [OrderController::class, 'updateStatus'])->name('order.update-status');
+    Route::get('/order/{id}/invoice', [OrderController::class, 'adminInvoice'])->name('order.invoice');
 });
 
 // ========================================

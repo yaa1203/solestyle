@@ -395,7 +395,7 @@ class OrderController extends Controller
     {
         $query = Order::with(['user', 'orderItems'])->recent();
         
-        // Filter by status
+        // Filter by status if provided
         if ($request->has('status') && $request->status !== 'all') {
             $query->byStatus($request->status);
         }
@@ -414,14 +414,24 @@ class OrderController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%");
+                ->orWhere('customer_name', 'like', "%{$search}%")
+                ->orWhere('customer_email', 'like', "%{$search}%");
             });
         }
         
         $orders = $query->paginate(20);
         
-        return view('admin.orders.index', compact('orders'));
+        // Calculate order statistics
+        $orderStats = [
+            'total' => Order::count(),
+            'pending_payment' => Order::byStatus('pending_payment')->count(),
+            'paid' => Order::byStatus('paid')->count(),
+            'processing' => Order::byStatus('processing')->count(),
+            'shipped' => Order::byStatus('shipped')->count(),
+            'delivered' => Order::byStatus('delivered')->count(),
+        ];
+        
+        return view('admin.order.index', compact('orders', 'orderStats'));
     }
     
     /**
@@ -499,5 +509,61 @@ class OrderController extends Controller
                 'message' => 'Gagal mengupdate status: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Admin: Show specific order details
+     */
+    public function adminShow($id)
+    {
+        $order = Order::with(['user', 'orderItems.product', 'orderItems.productSize'])
+            ->findOrFail($id);
+        
+        $timeline = $this->generateTrackingTimeline($order);
+        
+        if (request()->ajax()) {
+            $html = view('admin.orders.show-modal', compact('order', 'timeline'))->render();
+            
+            return response()->json([
+                'success' => true,
+                'html' => $html
+            ]);
+        }
+        
+        return view('admin.order.show', compact('order', 'timeline'));
+    }
+
+    /**
+     * Admin: Download invoice
+     */
+    public function adminInvoice($id)
+    {
+        $order = Order::with(['user', 'orderItems.product'])
+            ->findOrFail($id);
+        
+        return view('admin.order.invoice', compact('order'));
+    }
+
+    /**
+     * Get order statistics for dashboard
+     */
+    public function getOrderStats()
+    {
+        $stats = [
+            'total' => Order::count(),
+            'today' => Order::whereDate('order_date', today())->count(),
+            'pending_payment' => Order::where('status', 'pending_payment')->count(),
+            'processing' => Order::where('status', 'processing')->count(),
+            'shipped' => Order::where('status', 'shipped')->count(),
+            'delivered' => Order::where('status', 'delivered')->count(),
+            'cancelled' => Order::where('status', 'cancelled')->count(),
+            'total_revenue' => Order::whereIn('status', ['paid', 'processing', 'shipped', 'delivered'])->sum('total_amount'),
+            'monthly_revenue' => Order::whereIn('status', ['paid', 'processing', 'shipped', 'delivered'])
+                                    ->whereMonth('order_date', now()->month)
+                                    ->whereYear('order_date', now()->year)
+                                    ->sum('total_amount'),
+        ];
+        
+        return response()->json($stats);
     }
 }
