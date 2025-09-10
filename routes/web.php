@@ -13,6 +13,7 @@ use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminOrderController;
+use App\Http\Controllers\ProfileController;
 
 // ========================================
 // PUBLIC ROUTES (HANYA WELCOME)
@@ -93,10 +94,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/upload-receipt', [PaymentController::class, 'uploadReceipt'])->name('payment.upload.receipt');
     
     // ===== USER ORDERS MANAGEMENT =====
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{id}', [OrderController::class, 'show'])->name('orders.show');
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
-    Route::post('/orders/{id}/confirm-delivery', [OrderController::class, 'confirmDelivery'])->name('orders.confirmDelivery');
+    Route::post('/orders/{order}/confirm-delivery', [OrderController::class, 'confirmDelivery'])
+    ->name('orders.confirmDelivery');
     Route::post('/orders/{id}/reorder', [OrderController::class, 'reorder'])->name('orders.reorder');
     Route::post('/orders/{id}/payment-proof', [OrderController::class, 'uploadPaymentProof'])->name('orders.uploadPaymentProof');
     Route::get('/orders/{id}/invoice', [OrderController::class, 'invoice'])->name('orders.invoice');
@@ -106,6 +108,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/order/track', [OrderController::class, 'trackForm'])->name('order.trackForm');
     Route::post('/order/track', [OrderController::class, 'processTrack'])->name('order.processTrack');
     Route::get('/order/track/{orderNumber}', [OrderController::class, 'track'])->name('order.track');
+
+    Route::get('/profile', [ProfileController::class, 'show'])->middleware('auth')->name('profile.show');
+    Route::post('/profile', [ProfileController::class, 'update'])->middleware('auth')->name('profile.update');
 });
 
 // ========================================
@@ -137,7 +142,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     // Admin Order Management Routes
     Route::resource('order', AdminOrderController::class);
     Route::get('order', [AdminOrderController::class, 'index'])->name('order.index');
-    Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
+    Route::get('order/{id}', [AdminOrderController::class, 'show'])->name('order.show');
 
     // ✅ route update status harus POST
     Route::post('order/{id}/update-status', [AdminOrderController::class, 'updateStatus'])

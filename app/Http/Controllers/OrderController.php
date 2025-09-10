@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -10,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-
 class OrderController extends Controller
 {
     /**
@@ -32,7 +29,7 @@ class OrderController extends Controller
         
         $orders = $query->paginate(10);
         
-        // Get order statistics
+        // Calculate order statistics
         $orderStats = [
             'total' => Order::forUser(Auth::id())->count(),
             'pending_payment' => Order::forUser(Auth::id())->byStatus('pending_payment')->count(),
@@ -167,23 +164,25 @@ class OrderController extends Controller
     public function confirmDelivery($id)
     {
         $order = Order::forUser(Auth::id())->findOrFail($id);
-        
         if ($order->status !== 'shipped') {
             return response()->json([
                 'success' => false,
                 'message' => 'Pesanan belum dalam status dikirim'
             ], 400);
         }
-        
         try {
-            $order->markAsDelivered();
-            
+            DB::beginTransaction();
+            $order->update([
+                'status' => 'delivered',
+                'delivered_date' => now(),
+            ]);
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Pesanan telah dikonfirmasi diterima'
             ]);
-            
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
@@ -378,12 +377,13 @@ class OrderController extends Controller
             'date' => $order->delivered_date,
             'status' => $order->status === 'delivered' ? 'completed' : 'pending',
             'icon' => 'fas fa-home',
-            'description' => $order->delivered_date ? 'Pesanan telah diterima' : 'Menunggu konfirmasi penerimaan',
+            'description' => $order->delivered_date 
+                ? 'Pesanan telah diterima' 
+                : 'Menunggu konfirmasi penerimaan',
         ];
         
         return $timeline;
     }
-
     /**
      * Show order failed page
      */
@@ -520,7 +520,6 @@ class OrderController extends Controller
             ], 500);
         }
     }
-
     /**
      * Admin: Show specific order details
      */
@@ -542,7 +541,6 @@ class OrderController extends Controller
         
         return view('admin.order.show', compact('order', 'timeline'));
     }
-
     /**
      * Admin: Download invoice
      */
@@ -553,7 +551,6 @@ class OrderController extends Controller
         
         return view('admin.order.invoice', compact('order'));
     }
-
     /**
      * Get order statistics for dashboard
      */

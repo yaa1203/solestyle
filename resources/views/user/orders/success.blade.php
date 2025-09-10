@@ -124,10 +124,6 @@
                     <span class="text-slate-300">Ongkos Kirim</span>
                     <span class="text-green-400">{{ $order->formatted_shipping_cost }} @if($order->shipping_cost == 0)<small>(Gratis)</small>@endif</span>
                 </div>
-                <div class="flex justify-between text-sm">
-                    <span class="text-slate-300">Pajak</span>
-                    <span class="text-white">{{ $order->formatted_tax }}</span>
-                </div>
                 <hr class="border-slate-600">
                 <div class="flex justify-between">
                     <span class="font-bold text-white text-lg">Total</span>
@@ -235,7 +231,7 @@
                 Lacak Pesanan
             </a>
             
-            <a href="{{ route('products.index') }}" 
+            <a href="{{ route('produk.index') }}" 
                class="inline-flex items-center justify-center px-8 py-4 border-2 border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:border-purple-400 rounded-lg font-semibold transition-all">
                 <i class="fas fa-shopping-bag mr-2"></i>
                 Lanjut Belanja
@@ -246,32 +242,6 @@
                 <i class="fas fa-home mr-2"></i>
                 Ke Beranda
             </a>
-        </div>
-        
-        <!-- Contact Support -->
-        <div class="mt-12 p-6 bg-slate-800/30 border border-slate-700 rounded-xl">
-            <h3 class="text-lg font-semibold text-white mb-4">Butuh Bantuan?</h3>
-            <p class="text-slate-400 mb-4">Tim customer service kami siap membantu Anda 24/7</p>
-            
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://wa.me/6281234567890?text=Halo,%20saya%20butuh%20bantuan%20terkait%20pesanan%20{{ $order->order_number }}" target="_blank"
-                   class="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all">
-                    <i class="fab fa-whatsapp mr-2"></i>
-                    WhatsApp
-                </a>
-                
-                <a href="mailto:support@solestyle.com?subject=Bantuan Pesanan {{ $order->order_number }}&body=Halo,%0A%0ASaya butuh bantuan terkait pesanan {{ $order->order_number }}.%0A%0ATerima kasih."
-                   class="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
-                    <i class="fas fa-envelope mr-2"></i>
-                    Email Support
-                </a>
-                
-                <a href="tel:+6281234567890"
-                   class="inline-flex items-center justify-center px-6 py-3 bg-slate-600 hover:bg-slate-700 text-white rounded-lg font-medium transition-all">
-                    <i class="fas fa-phone mr-2"></i>
-                    Telepon
-                </a>
-            </div>
         </div>
         
         <!-- Order Timeline -->

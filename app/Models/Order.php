@@ -33,6 +33,8 @@ class Order extends Model
         'shipped_date',
         'delivered_date',
         'payment_proof',
+        'tracking_number',   // ✅ baru
+        'admin_notes',       // ✅ baru
     ];
 
     protected $casts = [
@@ -47,12 +49,12 @@ class Order extends Model
         'delivered_date' => 'datetime',
     ];
 
+    // 🔗 Relationships
     public function payment()
     {
         return $this->hasOne(Payment::class);
     }
 
-    // Relationships
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -63,7 +65,25 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    // Accessors
+    // Jika perlu stock rollback
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function productSize()
+    {
+        return $this->belongsTo(ProductSize::class, 'size_id');
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->orderItems->sum(function($item) {
+            return $item->price * $item->quantity;
+        });
+    }
+
+    // 🏷 Accessors
     public function getFormattedSubtotalAttribute()
     {
         return 'Rp ' . number_format($this->subtotal, 0, ',', '.');
@@ -101,7 +121,7 @@ class Order extends Model
             'refunded' => 'Dikembalikan',
         ];
 
-        return $statuses[$this->status] ?? $this->status;
+        return $statuses[$this->status] ?? ucfirst($this->status);
     }
 
     public function getStatusColorAttribute()
@@ -130,22 +150,20 @@ class Order extends Model
             'gopay' => 'GoPay',
         ];
         
-        return $labels[$this->payment_method] ?? $this->payment_method;
+        return $labels[$this->payment_method] ?? ucfirst($this->payment_method);
     }
 
     public function getShippingEstimateAttribute()
     {
-        // Default shipping estimate
         return $this->payment_method === 'cod' ? '3-5 Hari Kerja' : '2-3 Hari Kerja';
     }
 
     public function getCourierNameAttribute()
     {
-        // You can customize this based on payment method or other factors
         return 'SoleStyle Express';
     }
 
-    // Scopes
+    // 🔍 Scopes
     public function scopeForUser($query, $userId)
     {
         return $query->where('user_id', $userId);
@@ -161,7 +179,7 @@ class Order extends Model
         return $query->orderBy('created_at', 'desc');
     }
 
-    // Methods
+    // ⚙️ Methods
     public function canBeCancelled()
     {
         return in_array($this->status, ['pending_payment', 'paid']);
@@ -182,11 +200,12 @@ class Order extends Model
         ]);
     }
 
-    public function markAsShipped()
+    public function markAsShipped($trackingNumber = null)
     {
         $this->update([
             'status' => 'shipped',
             'shipped_date' => now(),
+            'tracking_number' => $trackingNumber,
         ]);
     }
 
@@ -203,7 +222,7 @@ class Order extends Model
         if ($this->canBeCancelled()) {
             $this->update(['status' => 'cancelled']);
             
-            // Restore product stock
+            // ✅ Restore stock
             foreach ($this->orderItems as $item) {
                 if ($item->size_id) {
                     ProductSize::where('id', $item->size_id)->increment('stock', $item->quantity);
@@ -216,5 +235,10 @@ class Order extends Model
         }
         
         return false;
+    }
+
+    public function isCOD()
+    {
+        return $this->payment_method === 'cod';
     }
 }

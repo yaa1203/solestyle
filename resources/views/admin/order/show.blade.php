@@ -1,7 +1,5 @@
 @extends('admin.layouts.app')
-
 @section('title', 'Detail Pesanan - Admin SoleStyle')
-
 @section('content')
 <div class="container mx-auto px-4 py-8">
     <!-- Header -->
@@ -201,9 +199,10 @@
                         <span class="text-white">{{ $order->formatted_shipping_cost }}</span>
                     </div>
                     
+                    <!-- Ganti Pajak dengan Qty -->
                     <div class="flex justify-between text-sm">
-                        <span class="text-slate-300">Pajak</span>
-                        <span class="text-white">{{ $order->formatted_tax }}</span>
+                        <span class="text-slate-300">Qty</span>
+                        <span class="text-white font-medium">{{ $order->orderItems->sum('quantity') }} item</span>
                     </div>
                     
                     <hr class="border-slate-600">
@@ -256,74 +255,59 @@
                 <!-- Action Buttons -->
                 <div class="space-y-3">
                     <a href="{{ route('order.index') }}" 
-                       class="block w-full text-center py-3 border-2 border-slate-500/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-400 rounded-lg font-medium transition-all">
+                    class="block w-full text-center py-3 border-2 border-slate-500/50 text-slate-300 hover:bg-slate-700/50 hover:border-slate-400 rounded-lg font-medium transition-all">
                         <i class="fas fa-arrow-left mr-2"></i>
                         Kembali ke Daftar Pesanan
                     </a>
-
-                    <button onclick="updateStatus({{ $order->id }})" 
-                            class="block w-full text-center py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg font-medium transition-all">
-                        <i class="fas fa-edit mr-2"></i>
-                        Update Status
+                    
+                    <!-- Status Update Buttons -->
+                    @if($order->status == 'pending_payment')
+                    <button onclick="updateStatus({{ $order->id }}, 'paid')" 
+                            class="block w-full text-center py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Setujui Pembayaran
                     </button>
+                    @endif
+                    
+                    @if($order->status == 'paid')
+                    <button onclick="updateStatus({{ $order->id }}, 'processing')" 
+                            class="block w-full text-center py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-box mr-2"></i>
+                        Proses Pesanan
+                    </button>
+                    @endif
+                    
+                    @if($order->status == 'processing')
+                    <button onclick="updateStatus({{ $order->id }}, 'shipped')" 
+                            class="block w-full text-center py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-truck mr-2"></i>
+                        Kirim Pesanan
+                    </button>
+                    @endif
+                    
+                    @if($order->status == 'shipped')
+                    <button onclick="updateStatus({{ $order->id }}, 'delivered')" 
+                            class="block w-full text-center py-3 bg-green-600 hover:bg-green-500 text-white rounded-lg font-medium transition-all">
+                        <i class="fas fa-check mr-2"></i>
+                        Selesaikan Pesanan
+                    </button>
+                    @endif
+                    
+                    @if($order->status == 'cancelled')
+                    <div class="block w-full text-center py-3 bg-red-600 text-white rounded-lg font-medium">
+                        <i class="fas fa-times-circle mr-2"></i>
+                        Pesanan Dibatalkan
+                    </div>
+                    @endif
+                    
+                    @if($order->status == 'delivered')
+                    <div class="block w-full text-center py-3 bg-emerald-600 text-white rounded-lg font-medium">
+                        <i class="fas fa-check-double mr-2"></i>
+                        Pesanan Selesai
+                    </div>
+                    @endif
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Update Status Modal -->
-<div id="updateStatusModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-md w-full p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-white">Update Status Pesanan</h3>
-                <button onclick="closeUpdateStatusModal()" class="text-slate-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <form id="updateStatusForm">
-                <input type="hidden" id="updateOrderId" name="order_id">
-                
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Status Baru *</label>
-                    <select name="status" id="newStatus" required
-                            class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
-                        <option value="">Pilih Status</option>
-                        <option value="pending_payment">Menunggu Pembayaran</option>
-                        <option value="paid">Dibayar</option>
-                        <option value="processing">Dikemas</option>
-                        <option value="shipped">Dikirim</option>
-                        <option value="delivered">Selesai</option>
-                        <option value="cancelled">Dibatalkan</option>
-                    </select>
-                </div>
-                
-                <div class="mb-4" id="trackingNumberDiv" style="display: none;">
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Nomor Resi</label>
-                    <input type="text" name="tracking_number" id="trackingNumber"
-                           class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-400"
-                           placeholder="Masukkan nomor resi pengiriman">
-                </div>
-                
-                <div class="mb-6">
-                    <label class="block text-sm font-medium text-slate-300 mb-2">Catatan Admin</label>
-                    <textarea name="admin_notes" rows="3" placeholder="Catatan tambahan..."
-                              class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 resize-none"></textarea>
-                </div>
-                
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeUpdateStatusModal()" 
-                            class="flex-1 bg-slate-600 hover:bg-slate-700 text-white py-2 rounded-lg font-medium transition-all">
-                        Batal
-                    </button>
-                    <button type="submit" 
-                            class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-2 rounded-lg font-medium transition-all">
-                        <span id="updateSubmitText">Update</span>
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
@@ -348,59 +332,67 @@
 </div>
 
 <script>
-// Update status modal
-function updateStatus(orderId) {
-    document.getElementById('updateOrderId').value = orderId;
-    document.getElementById('updateStatusModal').classList.remove('hidden');
+// Update status function
+function updateStatus(orderId, newStatus) {
+    // Show confirmation
+    if (!confirm('Apakah Anda yakin ingin mengubah status pesanan ini?')) {
+        return;
+    }
     
-    // Reset form
-    document.getElementById('updateStatusForm').reset();
-    document.getElementById('trackingNumberDiv').style.display = 'none';
-}
-
-function closeUpdateStatusModal() {
-    document.getElementById('updateStatusModal').classList.add('hidden');
-}
-
-// Show/hide tracking number field based on status
-document.getElementById('newStatus').addEventListener('change', function() {
-    const trackingDiv = document.getElementById('trackingNumberDiv');
-    trackingDiv.style.display = this.value === 'shipped' ? 'block' : 'none';
-});
-
-// Handle update status form
-document.getElementById('updateStatusForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const orderId = document.getElementById('updateOrderId').value;
-    const submitButton = document.getElementById('updateSubmitText');
-    
-    submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    // Show loading state
+    const button = event.target;
+    button.disabled = true;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
     
     fetch(`/order/${orderId}/update-status`, {
         method: 'POST',
-        body: formData,
+        body: JSON.stringify({
+            status: newStatus,
+            _token: document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }),
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
-            showNotification(data.message, 'success');
-            setTimeout(() => location.reload(), 1000);
+            // Show success message
+            showNotification(data.message || 'Status pesanan berhasil diperbarui', 'success');
+            
+            // Reload page
+            setTimeout(() => {
+                location.reload();
+            }, 1000);
         } else {
-            showNotification(data.message || 'Gagal update status', 'error');
+            throw new Error(data.message || 'Gagal memperbarui status');
         }
     })
-    .catch(() => {
-        showNotification('Terjadi kesalahan saat mengupdate status', 'error');
+    .catch(err => {
+        console.error('Error:', err);
+        showNotification('Error: ' + (err.message || 'Terjadi kesalahan server'), 'error');
     })
     .finally(() => {
-        submitButton.innerHTML = 'Update';
+        // Reset button state (if not reloaded)
+        button.disabled = false;
+        // Reset button text based on status
+        if (newStatus === 'paid') {
+            button.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Setujui Pembayaran';
+        } else if (newStatus === 'processing') {
+            button.innerHTML = '<i class="fas fa-box mr-2"></i>Proses Pesanan';
+        } else if (newStatus === 'shipped') {
+            button.innerHTML = '<i class="fas fa-truck mr-2"></i>Kirim Pesanan';
+        } else if (newStatus === 'delivered') {
+            button.innerHTML = '<i class="fas fa-check mr-2"></i>Selesaikan Pesanan';
+        }
     });
-});
+}
 
 // Payment proof modal
 function viewPaymentProof(imageUrl) {

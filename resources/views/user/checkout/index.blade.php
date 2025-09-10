@@ -1,14 +1,11 @@
 @extends('user.layouts.app')
-
 @section('title', 'Checkout - SoleStyle')
-
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <div class="mb-8">
         <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Checkout</h1>
         <p class="text-slate-400 mt-2">Selesaikan pemesanan Anda</p>
     </div>
-
     <form id="checkout-form" method="POST" action="{{ route('checkout.process') }}">
         @csrf
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -24,6 +21,7 @@
                     </h3>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Nama Lengkap -->
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Nama Lengkap *</label>
                             <input type="text" name="customer_name" id="customer_name" required
@@ -35,6 +33,7 @@
                             @enderror
                         </div>
                         
+                        <!-- Email -->
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Email *</label>
                             <input type="email" name="customer_email" id="customer_email" required
@@ -46,12 +45,13 @@
                             @enderror
                         </div>
                         
+                        <!-- Nomor Telepon -->
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-slate-300 mb-2">Nomor Telepon *</label>
                             <input type="tel" name="customer_phone" id="customer_phone" required
-                                  value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
-                                  class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                  placeholder="08xxxxxxxxxx">
+                                   value="{{ old('customer_phone', auth()->user()->phone ?? '') }}"
+                                   class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                   placeholder="081234567890">
                             @error('customer_phone')
                                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -70,8 +70,8 @@
                         <div>
                             <label class="block text-sm font-medium text-slate-300 mb-2">Alamat Lengkap *</label>
                             <textarea name="shipping_address" id="shipping_address" rows="3" required
-                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                      placeholder="Masukkan alamat lengkap termasuk kecamatan, kota, provinsi, dan kode pos">{{ old('shipping_address') }}</textarea>
+                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
+                                      placeholder="Masukkan alamat lengkap">{{ old('shipping_address', auth()->user()->address ?? '') }}</textarea>
                             @error('shipping_address')
                                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -80,26 +80,23 @@
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Kota</label>
-                                <input type="text" name="city" 
-                                      value="{{ old('city') }}"
-                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                      placeholder="Jakarta">
+                                <input type="text" name="city"
+                                    value="{{ old('city', auth()->user()->city ?? '') }}"
+                                    class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Provinsi</label>
                                 <input type="text" name="province"
-                                      value="{{ old('province') }}"
-                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                      placeholder="DKI Jakarta">
+                                     value="{{ old('province', auth()->user()->province ?? '') }}"
+                                     class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
                             </div>
                             
                             <div>
                                 <label class="block text-sm font-medium text-slate-300 mb-2">Kode Pos</label>
                                 <input type="text" name="postal_code"
-                                      value="{{ old('postal_code') }}"
-                                      class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all"
-                                      placeholder="12345">
+                                    value="{{ old('postal_code', auth()->user()->postal_code ?? '') }}"
+                                    class="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-2 text-white">
                             </div>
                         </div>
                     </div>
@@ -113,51 +110,29 @@
                     </h3>
                     
                     <div class="space-y-3">
-                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="cod" class="text-purple-600 mr-4">
-                            <div class="flex items-center flex-1">
-                                <i class="fas fa-money-bill-wave text-green-400 mr-3"></i>
-                                <div>
-                                    <p class="text-white font-medium">Cash on Delivery (COD)</p>
-                                    <p class="text-slate-400 text-sm">Bayar saat barang diterima</p>
-                                </div>
-                            </div>
-                        </label>
+                        @php
+                            $payments = [
+                                ['value'=>'cod','icon'=>'fas fa-money-bill-wave','title'=>'Cash on Delivery (COD)','desc'=>'Bayar saat barang diterima','color'=>'text-green-400'],
+                                ['value'=>'dana','icon'=>'fas fa-wallet','title'=>'DANA','desc'=>'E-wallet terpopuler di Indonesia','color'=>'text-blue-400'],
+                                ['value'=>'ovo','icon'=>'fas fa-wallet','title'=>'OVO','desc'=>'E-wallet praktis dan mudah','color'=>'text-purple-400'],
+                                ['value'=>'gopay','icon'=>'fas fa-mobile-alt','title'=>'GoPay','desc'=>'E-wallet dari Gojek','color'=>'text-green-400'],
+                            ];
+                        @endphp
                         
+                        @foreach($payments as $payment)
                         <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="dana" class="text-purple-600 mr-4">
+                            <input type="radio" name="payment_method" value="{{ $payment['value'] }}" class="text-purple-600 mr-4">
                             <div class="flex items-center flex-1">
-                                <i class="fas fa-wallet text-blue-400 mr-3"></i>
+                                <i class="{{ $payment['icon'] }} {{ $payment['color'] }} mr-3"></i>
                                 <div>
-                                    <p class="text-white font-medium">DANA</p>
-                                    <p class="text-slate-400 text-sm">E-wallet terpopuler di Indonesia</p>
+                                    <p class="text-white font-medium">{{ $payment['title'] }}</p>
+                                    <p class="text-slate-400 text-sm">{{ $payment['desc'] }}</p>
                                 </div>
                             </div>
                         </label>
-                        
-                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="ovo" class="text-purple-600 mr-4">
-                            <div class="flex items-center flex-1">
-                                <i class="fas fa-wallet text-purple-400 mr-3"></i>
-                                <div>
-                                    <p class="text-white font-medium">OVO</p>
-                                    <p class="text-slate-400 text-sm">E-wallet praktis dan mudah</p>
-                                </div>
-                            </div>
-                        </label>
-                        
-                        <label class="flex items-center p-4 border border-slate-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer">
-                            <input type="radio" name="payment_method" value="gopay" class="text-purple-600 mr-4">
-                            <div class="flex items-center flex-1">
-                                <i class="fas fa-mobile-alt text-green-400 mr-3"></i>
-                                <div>
-                                    <p class="text-white font-medium">GoPay</p>
-                                    <p class="text-slate-400 text-sm">E-wallet dari Gojek</p>
-                                </div>
-                            </div>
-                        </label>
+                        @endforeach
                     </div>
-                </div> 
+                </div>
             </div>
             
             <!-- Right Column: Order Summary -->
@@ -172,7 +147,6 @@
                     <div class="space-y-4 mb-6 max-h-64 overflow-y-auto">
                         @foreach($checkoutItems as $item)
                         <div class="flex items-center gap-3 p-3 bg-slate-700/30 rounded-lg">
-                            <!-- Hidden inputs for items -->
                             <input type="hidden" name="items[{{ $loop->index }}][cart_id]" value="{{ $item['cart_id'] }}">
                             <input type="hidden" name="items[{{ $loop->index }}][quantity]" value="{{ $item['quantity'] }}">
                             
@@ -219,11 +193,6 @@
                         <div class="flex justify-between text-sm">
                             <span class="text-slate-300">Ongkos Kirim</span>
                             <span class="text-green-400">{{ $formattedShipping }} <small>(Gratis)</small></span>
-                        </div>
-                        
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-300">Pajak</span>
-                            <span class="text-white">{{ $formattedTax }}</span>
                         </div>
                         
                         <hr class="border-slate-600">
@@ -276,20 +245,15 @@
         </div>
     </form>
 </div>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('checkout-form');
     const submitBtn = document.getElementById('place-order-btn');
     const btnText = document.getElementById('order-btn-text');
-    
     form.addEventListener('submit', function(e) {
         e.preventDefault();
-        
-        // Validate required fields
         const requiredFields = ['customer_name', 'customer_email', 'customer_phone', 'shipping_address'];
         let isValid = true;
-        
         requiredFields.forEach(fieldName => {
             const field = document.getElementById(fieldName);
             if (!field.value.trim()) {
@@ -301,89 +265,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 field.classList.remove('border-red-500');
             }
         });
-        
         if (!isValid) {
             showNotification('Harap lengkapi semua field yang wajib diisi', 'error');
             return;
         }
-        
-        // Show loading state
         submitBtn.disabled = true;
         btnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
-        
-        // Submit form
         fetch(form.action, {
             method: 'POST',
             body: new FormData(form),
-            headers: {
-                'Accept': 'application/json'
-            }
+            headers: { 'Accept':'application/json' }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showNotification('Pesanan berhasil dibuat!', 'success');
-                setTimeout(() => {
-                    window.location.href = data.redirect_url || '/order/success';
-                }, 1500);
+                setTimeout(() => window.location.href = data.redirect_url || '/order/success', 1500);
             } else {
                 throw new Error(data.message || 'Gagal memproses pesanan');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            showNotification(error.message || 'Terjadi kesalahan saat memproses pesanan', 'error');
-            
-            // Reset button
+            console.error(error);
+            showNotification(error.message, 'error');
             submitBtn.disabled = false;
             btnText.innerHTML = '<i class="fas fa-shopping-cart mr-2"></i>Buat Pesanan';
         });
     });
-    
-    // Phone number formatting
     const phoneInput = document.getElementById('customer_phone');
     phoneInput.addEventListener('input', function() {
-        let value = this.value.replace(/\D/g, '');
-        if (value.startsWith('0')) {
-            value = '+62' + value.substring(1);
-        }
-        // Remove formatting for now, just ensure it's numbers
-        this.value = value.replace(/^\+62/, '0');
+        this.value = this.value.replace(/\D/g,'');
     });
 });
-
-// Notification function
-function showNotification(message, type = 'info') {
-    const colors = {
-        success: 'from-green-500 to-emerald-500',
-        error: 'from-red-500 to-pink-500',
-        warning: 'from-yellow-500 to-orange-500',
-        info: 'from-blue-500 to-purple-500'
-    };
-    
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        warning: 'fa-exclamation-triangle',
-        info: 'fa-info-circle'
-    };
-    
+function showNotification(message, type='info') {
+    const colors = { success:'from-green-500 to-emerald-500', error:'from-red-500 to-pink-500', info:'from-blue-500 to-purple-500' };
+    const icons = { success:'fa-check-circle', error:'fa-exclamation-circle', info:'fa-info-circle' };
     const toast = document.createElement('div');
     toast.className = `fixed top-4 right-4 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-            <i class="fas ${icons[type]}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
+    toast.innerHTML = `<div class="flex items-center space-x-3"><i class="fas ${icons[type]}"></i><span>${message}</span></div>`;
     document.body.appendChild(toast);
-    
     setTimeout(() => toast.classList.remove('translate-x-full'), 100);
-    setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => document.body.removeChild(toast), 300);
-    }, 4000);
+    setTimeout(() => { toast.classList.add('translate-x-full'); setTimeout(()=>toast.remove(),300); }, 4000);
 }
 </script>
 @endsection

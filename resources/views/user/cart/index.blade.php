@@ -201,14 +201,6 @@
                             <i class="fas fa-check-circle mr-1"></i>Gratis
                         </span>
                     </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-slate-300">Pajak</span>
-                        <span class="text-slate-400" id="tax-amount">Rp 0</span>
-                    </div>
-                    <div class="flex justify-between items-center py-2">
-                        <span class="text-slate-300">Diskon</span>
-                        <span class="text-slate-400">Rp 0</span>
-                    </div>
                     
                     <hr class="border-slate-600">
                     
@@ -216,18 +208,6 @@
                         <span class="text-white font-bold text-lg">Total</span>
                         <span class="font-bold text-2xl text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400" id="final-total">Rp 0</span>
                     </div>
-                </div>
-                
-                <!-- Promo Code -->
-                <div class="mb-6">
-                    <div class="flex gap-2">
-                        <input type="text" placeholder="Kode promo..." id="promo-code"
-                               class="flex-1 bg-slate-700/50 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
-                        <button onclick="applyPromo()" class="bg-slate-600 hover:bg-slate-500 text-white px-4 py-3 rounded-lg font-medium transition-all">
-                            <i class="fas fa-tag"></i>
-                        </button>
-                    </div>
-                    <div id="promo-message" class="mt-2 text-sm hidden"></div>
                 </div>
                 
                 <div class="space-y-3">
@@ -421,12 +401,10 @@ function updateOrderSummary() {
         subtotal += price * quantity;
     });
     
-    const tax = Math.round(subtotal * 0.0001); // 0.01% tax
-    const total = subtotal + tax;
+    const total = subtotal; // No tax, discount, or additional fees
     
     // Update UI
     document.getElementById('selected-total').textContent = formatPrice(subtotal);
-    document.getElementById('tax-amount').textContent = formatPrice(tax);
     document.getElementById('final-total').textContent = formatPrice(total);
     
     // Enable/disable checkout button
@@ -618,45 +596,6 @@ function clearCart() {
         showNotification('Terjadi kesalahan', 'error');
     });
 }
-// Apply promo code
-function applyPromo() {
-    const promoCode = document.getElementById('promo-code').value.trim();
-    const promoMessage = document.getElementById('promo-message');
-    
-    if (!promoCode) {
-        promoMessage.textContent = 'Masukkan kode promo';
-        promoMessage.className = 'mt-2 text-sm text-red-400';
-        promoMessage.classList.remove('hidden');
-        return;
-    }
-    
-    // Simulate API call
-    setTimeout(() => {
-        // Mock promo validation
-        const validPromos = {
-            'WELCOME10': { discount: 10, type: 'percentage', message: 'Diskon 10% berhasil diterapkan!' },
-            'SAVE50K': { discount: 50000, type: 'fixed', message: 'Diskon Rp 50.000 berhasil diterapkan!' },
-            'FREESHIP': { discount: 0, type: 'shipping', message: 'Gratis ongkir berhasil diterapkan!' }
-        };
-        
-        if (validPromos[promoCode.toUpperCase()]) {
-            const promo = validPromos[promoCode.toUpperCase()];
-            promoMessage.textContent = promo.message;
-            promoMessage.className = 'mt-2 text-sm text-green-400';
-            promoMessage.classList.remove('hidden');
-            
-            // Apply discount (implement discount logic here)
-            updateOrderSummary();
-            showNotification('Kode promo berhasil diterapkan', 'success');
-        } else {
-            promoMessage.textContent = 'Kode promo tidak valid';
-            promoMessage.className = 'mt-2 text-sm text-red-400';
-            promoMessage.classList.remove('hidden');
-            showNotification('Kode promo tidak valid', 'error');
-        }
-    }, 1000);
-}
-// Checkout function
 // Checkout function - Simple and reliable version
 function checkout() {
     if (selectedItems.size === 0) {
@@ -673,7 +612,7 @@ function checkout() {
     checkoutText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
     
     try {
-        // Create form for get submission
+        // Create form for submission
         const form = document.createElement('form');
         form.method = 'get';
         form.action = '/checkout';
@@ -706,16 +645,6 @@ function checkout() {
             form.appendChild(itemQtyInput);
         });
         
-        // Add promo code if exists
-        const promoCode = document.getElementById('promo-code').value.trim();
-        if (promoCode) {
-            const promoInput = document.createElement('input');
-            promoInput.type = 'hidden';
-            promoInput.name = 'promo_code';
-            promoInput.value = promoCode;
-            form.appendChild(promoInput);
-        }
-        
         // Submit form
         document.body.appendChild(form);
         showNotification('Mengarahkan ke halaman checkout...', 'info');
@@ -735,7 +664,7 @@ function checkout() {
 }
 
 // Helper function to redirect to checkout with form submission
-function redirectToCheckout(checkoutItems, promoCode) {
+function redirectToCheckout(checkoutItems) {
     try {
         // Create a temporary form to submit checkout data
         const form = document.createElement('form');
@@ -764,15 +693,6 @@ function redirectToCheckout(checkoutItems, promoCode) {
             itemQtyInput.value = item.quantity;
             form.appendChild(itemQtyInput);
         });
-        
-        // Add promo code if exists
-        if (promoCode) {
-            const promoInput = document.createElement('input');
-            promoInput.type = 'hidden';
-            promoInput.name = 'promo_code';
-            promoInput.value = promoCode;
-            form.appendChild(promoInput);
-        }
         
         // Submit form
         document.body.appendChild(form);
@@ -804,7 +724,6 @@ function checkoutSimple() {
     // Store selected items in sessionStorage for checkout page
     const checkoutData = {
         selectedItems: Array.from(selectedItems),
-        promoCode: document.getElementById('promo-code').value.trim(),
         timestamp: Date.now()
     };
     

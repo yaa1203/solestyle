@@ -164,7 +164,6 @@
         </div>
     @endif
 </div>
-
 <!-- Payment Modal -->
 <div id="paymentProofModal" class="fixed inset-0 bg-black/50 z-50 hidden">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -194,7 +193,6 @@
         </div>
     </div>
 </div>
-
 <script>
 function cancelOrder(orderId) {
     if (confirm('Batalkan pesanan ini?')) {
@@ -216,7 +214,6 @@ function cancelOrder(orderId) {
         });
     }
 }
-
 function confirmDelivery(orderId) {
     if (confirm('Konfirmasi pesanan diterima?')) {
         fetch(`/orders/${orderId}/confirm-delivery`, {
@@ -237,7 +234,6 @@ function confirmDelivery(orderId) {
         });
     }
 }
-
 function reorder(orderId) {
     fetch(`/orders/${orderId}/reorder`, {
         method: 'POST',
@@ -258,17 +254,14 @@ function reorder(orderId) {
         }
     });
 }
-
 function uploadPaymentProof(orderId) {
     document.getElementById('paymentOrderId').value = orderId;
     document.getElementById('paymentProofModal').classList.remove('hidden');
 }
-
 function closePaymentProofModal() {
     document.getElementById('paymentProofModal').classList.add('hidden');
     document.getElementById('paymentProofForm').reset();
 }
-
 document.getElementById('paymentProofForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const formData = new FormData(this);
@@ -292,7 +285,6 @@ document.getElementById('paymentProofForm').addEventListener('submit', function(
         }
     });
 });
-
 function showNotification(message, type = 'info') {
     const colors = {
         success: 'from-green-500 to-emerald-500',

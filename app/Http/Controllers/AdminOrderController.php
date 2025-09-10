@@ -13,7 +13,6 @@ class AdminOrderController extends Controller
     public function index()
     {
         $orders = Order::latest()->paginate(15);
-
         return view('admin.order.index', compact('orders'));
     }
 
@@ -24,7 +23,7 @@ class AdminOrderController extends Controller
     {
         $order = Order::with(['orderItems', 'payment'])->findOrFail($id);
 
-        // Timeline (contoh sederhana)
+        // Timeline sederhana (lebih dinamis bisa dibuat pakai log history)
         $timeline = [
             [
                 'title' => 'Pesanan Dibuat',
@@ -57,7 +56,7 @@ class AdminOrderController extends Controller
             [
                 'title' => 'Selesai',
                 'description' => 'Pesanan telah selesai dan diterima.',
-                'date' => $order->status === 'delivered' ? now() : null,
+                'date' => $order->delivered_date,
                 'status' => $order->status === 'delivered' ? 'completed' : 'upcoming',
                 'icon' => 'fas fa-check-circle',
             ],
@@ -73,24 +72,23 @@ class AdminOrderController extends Controller
     {
         $request->validate([
             'status' => 'required|string',
-            'tracking_number' => 'nullable|string|max:255',
-            'admin_notes' => 'nullable|string',
         ]);
-
+        
         $order = Order::findOrFail($id);
-
         $order->status = $request->status;
-
-        if ($request->status === 'shipped' && $request->tracking_number) {
-            $order->tracking_number = $request->tracking_number;
+        
+        // Update tracking number jika status shipped
+        if ($request->status === 'shipped') {
+            $order->tracking_number = $request->input('tracking_number', '');
         }
-
-        if ($request->admin_notes) {
-            $order->admin_notes = $request->admin_notes;
+        
+        // Update delivered date jika status delivered
+        if ($request->status === 'delivered') {
+            $order->delivered_date = now();
         }
-
+        
         $order->save();
-
+        
         return response()->json([
             'success' => true,
             'message' => 'Status pesanan berhasil diperbarui.',

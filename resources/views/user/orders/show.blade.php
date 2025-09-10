@@ -131,7 +131,7 @@
             <div class="space-y-2">
                 <div class="text-sm">
                     <p class="text-slate-400 mb-1">Alamat</p>
-                    <p class="text-white">{{ $order->shipping_address }}</p>
+                    <p class="text-white">{{ $order->shipping_address }} <br> {{ $order->city }}, {{ $order->province }} {{ $order->postal_code }}</p>
                 </div>
                 @if($order->tracking_number)
                 <div class="text-sm">

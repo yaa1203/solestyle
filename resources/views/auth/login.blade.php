@@ -36,20 +36,6 @@
                     <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
                 @enderror
             </div>
-            
-            <div class="flex items-center justify-between">
-                <div class="flex items-center">
-                    <input id="remember_me" name="remember" type="checkbox" class="h-4 w-4 text-purple-600 bg-slate-700 border-slate-600 rounded focus:ring-purple-500">
-                    <label for="remember_me" class="ml-2 block text-sm text-slate-400">
-                        Ingat saya
-                    </label>
-                </div>
-                @if (Route::has('password.request'))
-                    <a href="{{ route('password.request') }}" class="text-sm text-purple-400 hover:text-purple-300 transition-colors">
-                        Lupa kata sandi?
-                    </a>
-                @endif
-            </div>
 
             <div>
                 <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-lg text-white font-semibold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">

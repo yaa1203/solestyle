@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\ProductSize;
@@ -116,15 +114,13 @@ class CheckoutController extends Controller
             $promoDiscount = $this->calculatePromoDiscount($promoCode, $subtotal);
         }
         
-        // Calculate other costs
-        $tax = (int)($subtotal * 0.0001); // 0.01% tax
+        // Calculate other costs (no tax)
         $shippingCost = 0; // Free shipping
-        $total = $subtotal - $promoDiscount + $tax + $shippingCost;
+        $total = $subtotal - $promoDiscount + $shippingCost;
         
         // Format prices
         $formattedSubtotal = 'Rp ' . number_format($subtotal, 0, ',', '.');
         $formattedPromoDiscount = 'Rp ' . number_format($promoDiscount, 0, ',', '.');
-        $formattedTax = 'Rp ' . number_format($tax, 0, ',', '.');
         $formattedShipping = 'Rp ' . number_format($shippingCost, 0, ',', '.');
         $formattedTotal = 'Rp ' . number_format($total, 0, ',', '.');
         
@@ -133,12 +129,10 @@ class CheckoutController extends Controller
             'subtotal',
             'promoCode',
             'promoDiscount',
-            'tax',
             'shippingCost',
             'total',
             'formattedSubtotal',
             'formattedPromoDiscount',
-            'formattedTax',
             'formattedShipping',
             'formattedTotal'
         ));
@@ -200,6 +194,16 @@ class CheckoutController extends Controller
             'order_notes' => 'nullable|string|max:1000',
         ]);
         
+        // Update profile jika kosong atau user mengisi data baru
+        $user = Auth::user();
+        $user->update([
+            'phone' => $request->customer_phone,
+            'address' => $request->shipping_address,
+            'city' => $request->city,
+            'province' => $request->province,
+            'postal_code' => $request->postal_code,
+        ]);
+        
         try {
             DB::beginTransaction();
             
@@ -244,11 +248,10 @@ class CheckoutController extends Controller
                 ];
             }
             
-            // Calculate final amounts
-            $tax = (int)($subtotal * 0.0001); // 0.01% tax
+            // Calculate final amounts (no tax)
             $shippingCost = 0; // Free shipping
             $promoDiscount = 0; // Add promo logic if needed
-            $total = $subtotal - $promoDiscount + $tax + $shippingCost;
+            $total = $subtotal - $promoDiscount + $shippingCost;
             
             // Generate order number
             $orderNumber = 'ORD-' . date('Ymd') . '-' . strtoupper(Str::random(6));
@@ -266,7 +269,7 @@ class CheckoutController extends Controller
                 'postal_code' => $request->postal_code,
                 'payment_method' => $request->payment_method,
                 'subtotal' => $subtotal,
-                'tax' => $tax,
+                'tax' => 0, // No tax
                 'shipping_cost' => $shippingCost,
                 'promo_discount' => $promoDiscount,
                 'total' => $total,

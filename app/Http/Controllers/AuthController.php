@@ -21,16 +21,21 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'role' => 'required|in:admin,user',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'role' => 'user', // Default role untuk setiap registrasi baru
+            'role' => $request->role, // ambil dari input
         ]);
 
         Auth::login($user);
+
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard')->with('status', 'Pendaftaran berhasil! Selamat datang Admin.');
+        }
 
         return redirect()->route('dashboard')->with('status', 'Pendaftaran berhasil! Selamat datang.');
     }

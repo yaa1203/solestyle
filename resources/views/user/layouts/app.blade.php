@@ -107,7 +107,7 @@
                 
                 <!-- Logo & Brand -->
                 <div class="flex items-center space-x-8">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-2 group">
+                    <a href="{{ url('dashboard') }}" class="flex items-center space-x-2 group">
                         <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center transform group-hover:scale-105 transition-transform">
                             <i class="fas fa-shoe-prints text-white text-lg"></i>
                         </div>
@@ -116,7 +116,7 @@
                     
                     <!-- Desktop Navigation -->
                     <div class="hidden lg:flex items-center space-x-1">
-                        <a href="{{ route('dashboard') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('dashboard*') ? 'active' : '' }}">
+                        <a href="{{ url('dashboard') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('dashboard*') ? 'active' : '' }}">
                             <i class="fas fa-home mr-2"></i>Beranda
                         </a>
                         <a href="{{ url('produk') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('produk*') ? 'active' : '' }}">
@@ -125,10 +125,6 @@
                         
                         <a href="{{ url('kategori') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('kategori*') ? 'active' : '' }}">
                             <i class="fas fa-th-large mr-2"></i>Kategori
-                        </a>
-                        
-                        <a href="{{ url('about') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50">
-                            <i class="fas fa-info-circle mr-2"></i>Tentang
                         </a>
                         <a href="{{ url('contact') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50">
                             <i class="fas fa-envelope mr-2"></i>Kontak
@@ -175,14 +171,11 @@
                         
                         <div class="dropdown absolute right-0 top-full mt-2 w-48 rounded-xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                             <div class="p-2">
-                                <a href="{{ url('profile') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                <a href="{{ route('profile.show') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                                     <i class="fas fa-user-circle mr-2 text-purple-400"></i>Profil
                                 </a>
                                 <a href="{{ url('orders') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                                     <i class="fas fa-box mr-2 text-purple-400"></i>Pesanan
-                                </a>
-                                <a href="{{ url('settings') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
-                                    <i class="fas fa-cog mr-2 text-purple-400"></i>Pengaturan
                                 </a>
                                 <hr class="my-2 border-slate-700">
                                 <form method="POST" action="{{ url('logout') }}">

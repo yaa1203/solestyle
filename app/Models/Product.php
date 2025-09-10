@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Models;
-
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
@@ -9,7 +7,7 @@ use Illuminate\Support\Facades\Storage;
 class Product extends Model
 {
     use HasFactory;
-
+    
     protected $fillable = [
         'name',
         'sku', 
@@ -21,34 +19,31 @@ class Product extends Model
         'description',
         'image'
     ];
-
+    
     protected $casts = [
         'price' => 'decimal:2',
         'stock' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
-
-    // Di Model Product, tambahkan accessor
-    public function getTotalStockAttribute()
-    {
-        return $this->sizes->sum('stock');
-    }
-
-    public function sizes()
-    {
-        return $this->hasMany(ProductSize::class);
-    }
-
+    
+    // Relationships
     public function category()
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
-
-    /**
-     * Scope untuk filter berdasarkan kategori
-     * DIPERBAIKI: menggunakan category_id, bukan category
-     */
+    
+    public function sizes()
+    {
+        return $this->hasMany(ProductSize::class);
+    }
+    
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+    
+    // Scopes
     public function scopeByCategory($query, $category)
     {
         if ($category) {
@@ -56,10 +51,7 @@ class Product extends Model
         }
         return $query;
     }
-
-    /**
-     * Scope untuk filter berdasarkan status
-     */
+    
     public function scopeByStatus($query, $status)
     {
         if ($status && $status !== 'Semua Status') {
@@ -73,10 +65,7 @@ class Product extends Model
         }
         return $query;
     }
-
-    /**
-     * Scope untuk filter berdasarkan stok
-     */
+    
     public function scopeByStock($query, $stockFilter)
     {
         if ($stockFilter && $stockFilter !== 'Semua Stok') {
@@ -93,74 +82,63 @@ class Product extends Model
         }
         return $query;
     }
-
-    /**
-     * Scope untuk produk aktif (untuk user)
-     */
+    
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
-
-    /**
-     * Scope untuk produk dengan stok tersedia
-     */
+    
     public function scopeInStock($query)
     {
         return $query->where('stock', '>', 0);
     }
-
-    /**
-     * Accessor untuk format harga
-     */
+    
+    // Accessors & Mutators
+    public function getTotalStockAttribute()
+    {
+        // Total stok dari produk utama + semua ukuran
+        $totalStock = $this->stock;
+        
+        foreach ($this->sizes as $size) {
+            $totalStock += $size->stock;
+        }
+        
+        return $totalStock;
+    }
+    
     public function getFormattedPriceAttribute()
     {
         return 'Rp ' . number_format($this->price, 0, ',', '.');
     }
-
-    /**
-     * Accessor untuk status text
-     */
+    
     public function getStatusTextAttribute()
     {
         return $this->status === 'active' ? 'Aktif' : 'Tidak Aktif';
     }
-
-    /**
-     * Accessor untuk badge class berdasarkan status
-     */
+    
     public function getStatusBadgeClassAttribute()
     {
         return $this->status === 'active' 
-            ? 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30'
-            : 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30';
+            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+            : 'bg-red-500/20 text-red-400 border border-red-500/30';
     }
-
-    /**
-     * Accessor untuk badge class berdasarkan stok
-     */
+    
     public function getStockBadgeClassAttribute()
     {
-        if ($this->stock == 0) {
-            return 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30 cursor-pointer hover:bg-red-500/30';
-        } elseif ($this->stock <= 10) {
-            return 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 cursor-pointer hover:bg-yellow-500/30';
+        if ($this->total_stock == 0) {
+            return 'text-red-400';
+        } elseif ($this->total_stock <= 10) {
+            return 'text-yellow-400';
         } else {
-            return 'inline-block px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-400 border border-green-500/30 cursor-pointer hover:bg-green-500/30';
+            return 'text-green-400';
         }
     }
-
-    /**
-     * Accessor untuk mengecek apakah gambar ada
-     */
+    
     public function getImageExistsAttribute()
     {
         return $this->image && Storage::disk('public')->exists($this->image);
     }
-
-    /**
-     * Accessor untuk URL gambar
-     */
+    
     public function getImageUrlAttribute()
     {
         if ($this->image && Storage::disk('public')->exists($this->image)) {
@@ -170,87 +148,68 @@ class Product extends Model
         // Fallback ke placeholder jika gambar tidak ada
         return asset('images/product-placeholder.png');
     }
-
-    /**
-     * Accessor untuk thumbnail URL
-     */
-    public function getThumbnailUrlAttribute()
-    {
-        // Untuk implementasi future: bisa membuat thumbnail dari gambar asli
-        return $this->image_url;
-    }
-
-    /**
-     * Accessor untuk status stok
-     */
+    
     public function getStockStatusAttribute()
     {
-        if ($this->stock == 0) {
+        if ($this->total_stock == 0) {
             return 'out_of_stock';
-        } elseif ($this->stock <= 10) {
+        } elseif ($this->total_stock <= 10) {
             return 'low_stock';
         } else {
             return 'in_stock';
         }
     }
-
-    /**
-     * Accessor untuk availability text
-     */
+    
     public function getAvailabilityTextAttribute()
     {
-        if ($this->stock == 0) {
+        if ($this->total_stock == 0) {
             return 'Habis';
-        } elseif ($this->stock <= 5) {
+        } elseif ($this->total_stock <= 5) {
             return 'Stok Terbatas';
         } else {
             return 'Tersedia';
         }
     }
-
-    /**
-     * Accessor untuk SEO friendly slug
-     */
+    
     public function getSlugAttribute()
     {
         return \Illuminate\Support\Str::slug($this->name);
     }
-
-    /**
-     * Accessor untuk nama kategori (backward compatibility)
-     */
+    
     public function getCategoryNameAttribute()
     {
         return $this->category ? $this->category->name : '-';
     }
-
-    /**
-     * Method untuk check apakah produk available untuk dibeli
-     */
+    
+    public function getSoldCountAttribute()
+    {
+        // Total quantity dari semua order items
+        return $this->orderItems()->sum('quantity');
+    }
+    
+    public function getAverageRatingAttribute()
+    {
+        // Implementasi sistem rating jika ada
+        // Untuk sekarang, return default rating
+        return '4.5';
+    }
+    
+    // Methods
     public function isAvailable()
     {
-        return $this->status === 'active' && $this->stock > 0;
+        return $this->status === 'active' && $this->total_stock > 0;
     }
-
-    /**
-     * Method untuk check apakah stok rendah
-     */
+    
     public function isLowStock($threshold = 10)
     {
-        return $this->stock > 0 && $this->stock <= $threshold;
+        return $this->total_stock > 0 && $this->total_stock <= $threshold;
     }
-
-    /**
-     * Method untuk check apakah stok habis
-     */
+    
     public function isOutOfStock()
     {
-        return $this->stock == 0;
+        return $this->total_stock == 0;
     }
-
-    /**
-     * Method untuk mengurangi stok (untuk order)
-     */
+    
     public function reduceStock($quantity)
     {
         if ($this->stock >= $quantity) {
@@ -259,32 +218,23 @@ class Product extends Model
         }
         return false;
     }
-
-    /**
-     * Method untuk menambah stok
-     */
+    
     public function addStock($quantity)
     {
         $this->increment('stock', $quantity);
         return true;
     }
-
-    /**
-     * Boot method untuk handle events
-     */
+    
+    // Boot method
     protected static function boot()
     {
         parent::boot();
-
-        // Event ketika produk dibuat
+        
         static::created(function ($product) {
-            // Log atau trigger event lain jika diperlukan
             \Log::info("Produk baru dibuat: {$product->name} (ID: {$product->id})");
         });
-
-        // Event ketika produk diupdate
+        
         static::updated(function ($product) {
-            // Log perubahan status jika diperlukan
             if ($product->wasChanged('status')) {
                 \Log::info("Status produk {$product->name} diubah menjadi: {$product->status}");
             }
@@ -293,12 +243,10 @@ class Product extends Model
                 \Log::info("Stok produk {$product->name} diubah menjadi: {$product->stock}");
             }
         });
-
-        // Event ketika produk dihapus
+        
         static::deleting(function ($product) {
-            // Hapus gambar jika ada
-            if ($product->image && Storage::disk('public')->exists($product->image)) {
-                Storage::disk('public')->delete($product->image);
+            if ($product->image && Storage::disk('public')->exists($this->image)) {
+                Storage::disk('public')->delete($this->image);
             }
         });
     }
