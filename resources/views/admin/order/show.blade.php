@@ -1,4 +1,3 @@
-<!-- resources/views/admin/order/show.blade.php -->
 @extends('admin.layouts.app')
 
 @section('title', 'Detail Pesanan - Admin SoleStyle')
@@ -215,7 +214,6 @@
                     </div>
                 </div>
                 
-                <!-- resources/views/admin/order/show.blade.php -->
                 <!-- Payment Information -->
                 <div class="mb-6">
                     <h4 class="text-sm font-medium text-slate-300 mb-3">Informasi Pembayaran</h4>
@@ -233,14 +231,14 @@
                         </div>
                         @endif
                         
-                        @if($order->payment_proof || ($order->payment && $order->payment->receipt_path))
-                        <div class="flex justify-between text-sm">
-                            <span class="text-slate-400">Bukti Bayar:</span>
-                            <button onclick="viewPaymentProof({{ $order->id }})" 
-                                    class="text-purple-400 hover:text-purple-300">
-                                <i class="fas fa-eye mr-1"></i>Lihat
-                            </button>
-                        </div>
+                        @if($order->payment && $order->payment->receipt_path)
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-400">Bukti Bayar:</span>
+                                <button onclick="viewPaymentProof('{{ asset('storage/' . $order->payment->receipt_path) }}')" 
+                                        class="text-purple-400 hover:text-purple-300">
+                                    <i class="fas fa-eye mr-1"></i>Lihat
+                                </button>
+                            </div>
                         @endif
                     </div>
                 </div>   
@@ -331,9 +329,9 @@
 </div>
 
 <!-- Payment Proof Modal -->
-<div id="paymentProofModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden">
+<div id="paymentProofModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-2xl w-full p-6">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl max-w-2xl w-full p-6 relative">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-semibold text-white">Bukti Pembayaran</h3>
                 <button onclick="closePaymentProofModal()" class="text-slate-400 hover:text-white">
@@ -343,7 +341,7 @@
             
             <div class="text-center">
                 <img id="paymentProofImage" src="" alt="Bukti Pembayaran" 
-                     class="max-w-full h-auto rounded-lg shadow-lg mx-auto">
+                     class="max-w-full max-h-[80vh] h-auto rounded-lg shadow-lg mx-auto object-contain">
             </div>
         </div>
     </div>
@@ -367,11 +365,7 @@ function closeUpdateStatusModal() {
 // Show/hide tracking number field based on status
 document.getElementById('newStatus').addEventListener('change', function() {
     const trackingDiv = document.getElementById('trackingNumberDiv');
-    if (this.value === 'shipped') {
-        trackingDiv.style.display = 'block';
-    } else {
-        trackingDiv.style.display = 'none';
-    }
+    trackingDiv.style.display = this.value === 'shipped' ? 'block' : 'none';
 });
 
 // Handle update status form
@@ -384,7 +378,7 @@ document.getElementById('updateStatusForm').addEventListener('submit', function(
     
     submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
     
-    fetch(`/admin/orders/${orderId}/update-status`, {
+    fetch(`/order/${orderId}/update-status`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -395,77 +389,43 @@ document.getElementById('updateStatusForm').addEventListener('submit', function(
     .then(data => {
         if (data.success) {
             showNotification(data.message, 'success');
-            closeUpdateStatusModal();
-            setTimeout(() => location.reload(), 1500);
+            setTimeout(() => location.reload(), 1000);
         } else {
-            showNotification(data.message, 'error');
+            showNotification(data.message || 'Gagal update status', 'error');
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Gagal mengupdate status pesanan', 'error');
+    .catch(() => {
+        showNotification('Terjadi kesalahan saat mengupdate status', 'error');
     })
     .finally(() => {
         submitButton.innerHTML = 'Update';
     });
 });
 
-// View payment proof
-function viewPaymentProof(orderId) {
-    fetch(`/admin/orders/${orderId}/payment-proof`)
-        .then(response => response.json())
-        .then(data => {
-            console.log('Payment proof response:', data); // Debug log
-            
-            if (data.success) {
-                document.getElementById('paymentProofImage').src = data.image_url;
-                document.getElementById('paymentProofModal').classList.remove('hidden');
-            } else {
-                showNotification(data.message, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showNotification('Gagal memuat bukti pembayaran', 'error');
-        });
+// Payment proof modal
+function viewPaymentProof(imageUrl) {
+    document.getElementById('paymentProofImage').src = imageUrl;
+    document.getElementById('paymentProofModal').classList.remove('hidden');
 }
 
 function closePaymentProofModal() {
     document.getElementById('paymentProofModal').classList.add('hidden');
 }
 
-// Notification function
+// Simple notification system
 function showNotification(message, type = 'info') {
-    const colors = {
-        success: 'from-green-500 to-emerald-500',
-        error: 'from-red-500 to-pink-500',
-        warning: 'from-yellow-500 to-orange-500',
-        info: 'from-blue-500 to-purple-500'
-    };
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg shadow-lg text-white ${
+        type === 'success' ? 'bg-green-600' : 
+        type === 'error' ? 'bg-red-600' : 'bg-slate-700'
+    }`;
+    notification.innerHTML = message;
     
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        warning: 'fa-exclamation-triangle',
-        info: 'fa-info-circle'
-    };
+    document.body.appendChild(notification);
     
-    const toast = document.createElement('div');
-    toast.className = `fixed top-4 right-4 bg-gradient-to-r ${colors[type]} text-white px-6 py-4 rounded-xl shadow-lg z-50 transform translate-x-full transition-transform duration-300`;
-    toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-            <i class="fas ${icons[type]}"></i>
-            <span>${message}</span>
-        </div>
-    `;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => toast.classList.remove('translate-x-full'), 100);
     setTimeout(() => {
-        toast.classList.add('translate-x-full');
-        setTimeout(() => document.body.removeChild(toast), 300);
-    }, 4000);
+        notification.remove();
+    }, 3000);
 }
 </script>
 @endsection

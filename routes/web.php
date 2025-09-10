@@ -89,7 +89,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payment/simulate', [PaymentController::class, 'simulateEWalletPayment'])
         ->name('payment.simulate')
         ->middleware('auth');
-    Route::get('/payment/check/{order_id}', [ApiController::class, 'checkPaymentStatus']);
     Route::get('/order/failed/{order_id}', [OrderController::class, 'failed'])->name('order.failed');
     Route::post('/payment/upload-receipt', [PaymentController::class, 'uploadReceipt'])->name('payment.upload.receipt');
     
@@ -137,9 +136,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
     
     // Admin Order Management Routes
     Route::resource('order', AdminOrderController::class);
-    Route::get('order/{order}/update-status', [AdminOrderController::class, 'updateStatus'])->name('order.update-status');
-    Route::get('order/{order}/payment-proof', [AdminOrderController::class, 'viewPaymentProof'])->name('order.payment-proof');
-    Route::get('order/stats', [AdminOrderController::class, 'getOrderStats'])->name('order.stats');
+    Route::get('order', [AdminOrderController::class, 'index'])->name('order.index');
+    Route::get('orders/{id}', [AdminOrderController::class, 'show'])->name('orders.show');
+
+    // ✅ route update status harus POST
+    Route::post('order/{id}/update-status', [AdminOrderController::class, 'updateStatus'])
+        ->name('order.updateStatus');
 });
 
 // ========================================
