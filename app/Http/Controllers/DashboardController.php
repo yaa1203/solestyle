@@ -10,7 +10,32 @@ class DashboardController extends Controller
 {
     public function userDashboard()
     {
-        return view('user.dashboard');
+        // Ambil kategori populer (berdasarkan jumlah produk)
+        $popularCategories = Category::withCount('products')
+            ->orderBy('products_count', 'desc')
+            ->take(8)
+            ->get();
+            
+        // Ambil produk terlaris (berdasarkan jumlah penjualan)
+        $bestSellers = Product::with(['sizes', 'category'])
+            ->withCount(['orderItems as sold_count' => function($query) {
+                $query->selectRaw('SUM(quantity) as total_quantity');
+            }])
+            ->orderBy('sold_count', 'desc')
+            ->take(8)
+            ->get();
+            
+        // Ambil produk terbaru
+        $newArrivals = Product::with(['sizes', 'category'])
+            ->orderBy('created_at', 'desc')
+            ->take(8)
+            ->get();
+            
+        return view('user.dashboard', compact(
+            'popularCategories',
+            'bestSellers',
+            'newArrivals'
+        ));
     }
     
     public function adminDashboard()
