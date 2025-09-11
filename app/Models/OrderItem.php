@@ -29,6 +29,16 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Order::class);
     }
+
+    public function review()
+    {
+        return $this->hasOne(Review::class);
+    }
+
+    public function canBeReviewed()
+    {
+        return $this->order->status === 'delivered' && !$this->review;
+    }
     
     public function product()
     {

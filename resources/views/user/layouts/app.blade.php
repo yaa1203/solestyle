@@ -177,6 +177,9 @@
                                 <a href="{{ url('orders') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                                     <i class="fas fa-box mr-2 text-purple-400"></i>Pesanan
                                 </a>
+                                <a href="{{ url('review') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                                    <i class="fas fa-box mr-2 text-purple-400"></i>Penilaian
+                                </a>
                                 <hr class="my-2 border-slate-700">
                                 <form method="POST" action="{{ url('logout') }}">
                                     @csrf

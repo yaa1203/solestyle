@@ -1,11 +1,12 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Product;
 use App\Models\ProductSize;
-use App\Models\Category; // Tambahkan import Category model
+use App\Models\Category;
+use App\Models\Review;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProdukController extends Controller
 {
@@ -14,14 +15,25 @@ class ProdukController extends Controller
      */
     public function index(Request $request)
     {
-        // Query dengan relasi kategori dan ukuran
-        $query = Product::with(['category', 'sizes'])->where('status', 'active');
+        // Query dengan relasi kategori, ukuran, dan reviews
+        $query = Product::with(['category', 'sizes', 'reviews' => function($reviewQuery) {
+                // Pastikan hanya menghitung review yang sudah disetujui
+                $reviewQuery->where('status', 'approved');
+            }])
+            ->withCount(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }])
+            ->withAvg(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }], 'rating')
+            ->where('status', 'active');
         
         // Filter berdasarkan pencarian
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
                   ->orWhereHas('category', function($categoryQuery) use ($search) {
                       $categoryQuery->where('name', 'like', "%{$search}%");
                   });
@@ -38,7 +50,8 @@ class ProdukController extends Controller
         // Filter berdasarkan ukuran
         if ($request->filled('size') && is_array($request->size)) {
             $query->whereHas('sizes', function($sizeQuery) use ($request) {
-                $sizeQuery->whereIn('size', $request->size);
+                $sizeQuery->whereIn('size', $request->size)
+                          ->where('stock', '>', 0);
             });
         }
         
@@ -76,10 +89,14 @@ class ProdukController extends Controller
                 $query->orderBy('created_at', 'desc');
                 break;
             case 'rating':
-                $query->orderBy('rating', 'desc');
+                // Sorting berdasarkan rating dengan memastikan tidak null
+                $query->orderByDesc('reviews_avg_rating')
+                      ->orderByDesc('reviews_count');
                 break;
             default: // popular
-                $query->orderBy('created_at', 'desc');
+                // Sorting berdasarkan jumlah review dengan memastikan tidak null
+                $query->orderByDesc('reviews_count')
+                      ->orderBy('created_at', 'desc');
                 break;
         }
         
@@ -88,14 +105,30 @@ class ProdukController extends Controller
         
         // Transform products untuk menambahkan data yang dibutuhkan view
         $products->getCollection()->transform(function ($product) {
+            // Format harga
             $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+            
+            // Data gambar
             $product->image_exists = !empty($product->image);
-            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : null;
+            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            
+            // Data kategori
             $product->category_name = $product->category ? $product->category->name : 'Uncategorized';
+            
+            // Data stok
             $product->total_stock = $product->sizes->sum('stock');
             $product->available_sizes = $product->sizes->filter(function ($size) {
                 return $size->stock > 0;
             })->pluck('size');
+            
+            // Data rating dan review dari database dengan memastikan tidak null
+            // Jika tidak ada review, set rating default 0
+            $product->average_rating = $product->reviews_avg_rating ? round($product->reviews_avg_rating, 1) : 0;
+            $product->reviews_count = $product->reviews_count ?? 0;
+            
+            // Pastikan rating tidak lebih dari 5
+            $product->average_rating = min($product->average_rating, 5);
+            
             return $product;
         });
         
@@ -120,7 +153,7 @@ class ProdukController extends Controller
         
         return view('user.produk.index', compact('products', 'categories', 'availableSizes'));
     }
-
+    
     /**
      * Show product detail
      */
@@ -131,11 +164,41 @@ class ProdukController extends Controller
             abort(404, 'Produk tidak ditemukan');
         }
         
-        // Load relasi kategori dan ukuran
-        $product->load(['category', 'sizes']);
+        // Load relasi kategori, ukuran, dan reviews dengan detail
+        $product->load([
+            'category', 
+            'sizes',
+            'reviews' => function($query) {
+                $query->with(['user', 'images'])
+                      ->where('status', 'approved') // Hanya tampilkan review yang disetujui
+                      ->orderBy('created_at', 'desc');
+            }
+        ]);
+        
+        // Hitung rata-rata rating dan jumlah review dari review yang disetujui
+        $approvedReviews = $product->reviews->where('status', 'approved');
+        $product->average_rating = $approvedReviews->avg('rating') ?? 0;
+        $product->reviews_count = $approvedReviews->count();
+        
+        // Pastikan rating tidak lebih dari 5
+        $product->average_rating = min($product->average_rating, 5);
+        
+        // Format harga dan data lainnya
+        $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+        $product->image_exists = !empty($product->image);
+        $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+        $product->total_stock = $product->sizes->sum('stock');
         
         // Produk terkait berdasarkan kategori
-        $relatedProducts = Product::with(['category', 'sizes'])
+        $relatedProducts = Product::with(['category', 'sizes', 'reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }])
+            ->withCount(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }])
+            ->withAvg(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }], 'rating')
             ->where('status', 'active')
             ->where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
@@ -143,41 +206,55 @@ class ProdukController extends Controller
             ->get();
             
         // Transform related products
-        $relatedProducts->transform(function ($product) {
-            $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
-            $product->image_exists = !empty($product->image);
-            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : null;
-            $product->total_stock = $product->sizes->sum('stock');
-            return $product;
+        $relatedProducts->transform(function ($relatedProduct) {
+            $relatedProduct->formatted_price = 'Rp ' . number_format($relatedProduct->price, 0, ',', '.');
+            $relatedProduct->image_exists = !empty($relatedProduct->image);
+            $relatedProduct->image_url = $relatedProduct->image_exists ? asset('storage/' . $relatedProduct->image) : asset('images/default-product.jpg');
+            $relatedProduct->total_stock = $relatedProduct->sizes->sum('stock');
+            $relatedProduct->average_rating = $relatedProduct->reviews_avg_rating ? round($relatedProduct->reviews_avg_rating, 1) : 0;
+            $relatedProduct->reviews_count = $relatedProduct->reviews_count ?? 0;
+            
+            // Pastikan rating tidak lebih dari 5
+            $relatedProduct->average_rating = min($relatedProduct->average_rating, 5);
+            
+            return $relatedProduct;
         });
         
         return view('user.produk.show', compact('product', 'relatedProducts'));
     }
-
+    
     /**
      * API endpoint untuk mendapatkan produk (untuk AJAX)
      */
     public function apiProducts(Request $request)
     {
-        $query = Product::with('category')->where('status', 'active');
-
+        $query = Product::with('category')
+            ->withCount(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }])
+            ->withAvg(['reviews' => function($reviewQuery) {
+                $reviewQuery->where('status', 'approved');
+            }], 'rating')
+            ->where('status', 'active');
+            
         // Apply filters
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
                   ->orWhereHas('category', function($categoryQuery) use ($search) {
                       $categoryQuery->where('name', 'like', "%{$search}%");
                   });
             });
         }
-
+        
         if ($request->filled('categories')) {
             $query->whereHas('category', function($categoryQuery) use ($request) {
                 $categoryQuery->whereIn('name', $request->categories);
             });
         }
-
+        
         if ($request->filled('price_range')) {
             switch ($request->price_range) {
                 case '0-500000':
@@ -194,7 +271,7 @@ class ProdukController extends Controller
                     break;
             }
         }
-
+        
         // Sorting
         $sortBy = $request->get('sort', 'popular');
         switch ($sortBy) {
@@ -211,23 +288,31 @@ class ProdukController extends Controller
                 $query->orderBy('created_at', 'desc');
                 break;
             case 'rating':
-                $query->orderBy('rating', 'desc');
+                $query->orderByDesc('reviews_avg_rating')
+                      ->orderByDesc('reviews_count');
                 break;
             default:
-                $query->orderBy('created_at', 'desc');
+                $query->orderByDesc('reviews_count')
+                      ->orderBy('created_at', 'desc');
                 break;
         }
-
+        
         $products = $query->paginate(12);
-
+        
         // Transform products untuk API response
         $products->getCollection()->transform(function ($product) {
             $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
             $product->category_name = $product->category ? $product->category->name : 'Uncategorized';
-            $product->image_url = $product->image ? asset('storage/' . $product->image) : null;
+            $product->image_url = $product->image ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            $product->average_rating = $product->reviews_avg_rating ? round($product->reviews_avg_rating, 1) : 0;
+            $product->reviews_count = $product->reviews_count ?? 0;
+            
+            // Pastikan rating tidak lebih dari 5
+            $product->average_rating = min($product->average_rating, 5);
+            
             return $product;
         });
-
+        
         return response()->json([
             'success' => true,
             'data' => $products->items(),
@@ -240,7 +325,7 @@ class ProdukController extends Controller
             ]
         ]);
     }
-
+    
     /**
      * Search suggestions for autocomplete
      */
@@ -251,25 +336,27 @@ class ProdukController extends Controller
         if (strlen($query) < 2) {
             return response()->json([]);
         }
-
+        
         $suggestions = Product::with('category')
             ->where('status', 'active')
             ->where(function($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('brand', 'like', "%{$search}%")
                   ->orWhereHas('category', function($categoryQuery) use ($query) {
                       $categoryQuery->where('name', 'like', "%{$query}%");
                   });
             })
-            ->select('name', 'category_id')
+            ->select('name', 'category_id', 'brand')
             ->limit(8)
             ->get()
             ->map(function($product) {
                 return [
                     'name' => $product->name,
+                    'brand' => $product->brand ?? '',
                     'category' => $product->category ? $product->category->name : 'Uncategorized'
                 ];
             });
-
+        
         return response()->json($suggestions);
     }
 }

@@ -14,6 +14,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReviewController;
 
 // ========================================
 // PUBLIC ROUTES (HANYA WELCOME)
@@ -111,6 +112,11 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'show'])->middleware('auth')->name('profile.show');
     Route::post('/profile', [ProfileController::class, 'update'])->middleware('auth')->name('profile.update');
+
+    Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
+    Route::get('/review/create/{order_item_id}', [ReviewController::class, 'create'])->name('review.create');
+    Route::post('/review', [ReviewController::class, 'store'])->name('review.store');
+    Route::get('/review/{id}', [ReviewController::class, 'show'])->name('review.show');
 });
 
 // ========================================

@@ -225,15 +225,30 @@
                 </div>
               @endif
               
+              <!-- Rating dengan data real dari database -->
               <div class="flex items-center gap-2 mb-4">
-                <div class="text-yellow-400 text-sm">
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
-                  <i class="fas fa-star"></i>
+                <div class="flex items-center">
+                  @if($product->reviews_count > 0 && $product->average_rating > 0)
+                      @for($i = 1; $i <= 5; $i++)
+                          @if($i <= round($product->average_rating))
+                              <i class="fas fa-star text-yellow-400 text-sm"></i>
+                          @else
+                              <i class="far fa-star text-slate-600 text-sm"></i>
+                          @endif
+                      @endfor
+                  @else
+                      @for($i = 1; $i <= 5; $i++)
+                          <i class="far fa-star text-slate-600 text-sm"></i>
+                      @endfor
+                  @endif
                 </div>
-                <span class="text-slate-400 text-sm">(4.5) 128 ulasan</span>
+                <span class="text-slate-400 text-sm">
+                  @if($product->reviews_count > 0 && $product->average_rating > 0)
+                    {{ number_format($product->average_rating, 1) }} ({{ $product->reviews_count }} ulasan)
+                  @else
+                    Belum ada rating ({{ $product->reviews_count ?? 0 }} ulasan)
+                  @endif
+                </span>
               </div>
               
               <div class="flex justify-between items-center mb-4">
@@ -293,18 +308,15 @@
   </div>
 </div>
 @endsection
-
 @section('scripts')
 <script>
 function applyFilters() {
   document.getElementById('filter-form').submit();
 }
-
 function toggleWishlist(productId) {
   // Add wishlist functionality here
   showNotification('Fitur wishlist akan segera tersedia', 'info');
 }
-
 // Toast notification function
 function showNotification(message, type = 'info') {
   const colors = {
@@ -345,7 +357,6 @@ function showNotification(message, type = 'info') {
     }, 300);
   }, 3000);
 }
-
 // Auto submit filter when checkbox/radio changed
 document.addEventListener('change', function(e) {
   if (e.target.matches('input[type="checkbox"], input[type="radio"]')) {
