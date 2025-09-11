@@ -478,6 +478,7 @@ document.getElementById('size-stock-modal').addEventListener('click', (e) => {
         closeSizeStockModal();
     }
 });
+
 // Auto hide alerts
 setTimeout(() => {
   const alerts = document.querySelectorAll('#success-alert, #error-alert');
@@ -486,6 +487,7 @@ setTimeout(() => {
     setTimeout(() => alert.remove(), 300);
   });
 }, 5000);
+
 // Select All Functionality
 function toggleSelectAll() {
   const selectAll = document.getElementById('select-all');

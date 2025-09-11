@@ -273,40 +273,6 @@
     
     <!-- Content Area -->
     <div class="p-6">
-      <!-- Alert Messages -->
-      @if(session('success'))
-        <div class="alert-message bg-green-500/20 border border-green-500/50 text-green-300 px-6 py-4 rounded-xl mb-6 flex items-center gap-3 shadow-lg" data-alert="success">
-          <i class="fas fa-check-circle text-green-400"></i>
-          <span>{{ session('success') }}</span>
-          <button onclick="this.parentElement.remove()" class="ml-auto text-green-400 hover:text-green-300">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      @endif
-      
-      @if(session('error'))
-        <div class="alert-message bg-red-500/20 border border-red-500/50 text-red-300 px-6 py-4 rounded-xl mb-6 flex items-center gap-3 shadow-lg" data-alert="error">
-          <i class="fas fa-exclamation-circle text-red-400"></i>
-          <span>{{ session('error') }}</span>
-          <button onclick="this.parentElement.remove()" class="ml-auto text-red-400 hover:text-red-300">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      @endif
-      
-      @if($errors->any())
-        <div class="alert-message bg-red-500/20 border border-red-500/50 text-red-300 px-6 py-4 rounded-xl mb-6 shadow-lg" data-alert="validation">
-          <div class="flex items-center gap-3 mb-3">
-            <i class="fas fa-exclamation-triangle text-red-400"></i>
-            <span class="font-medium">Terdapat kesalahan:</span>
-          </div>
-          <ul class="list-disc list-inside space-y-1 text-sm ml-6">
-            @foreach($errors->all() as $error)
-              <li>{{ $error }}</li>
-            @endforeach
-          </ul>
-        </div>
-      @endif
       
       @yield('content')
     </div>

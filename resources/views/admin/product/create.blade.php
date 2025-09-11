@@ -212,18 +212,6 @@
           @error('price') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
         </div>
 
-        <!-- Stock -->
-        <div>
-          <label class="block text-sm font-medium mb-2">Stok <span class="text-red-400">*</span></label>
-          <div class="relative">
-            <i class="fas fa-boxes absolute left-4 top-3 text-purple-400"></i>
-            <input type="number" name="stock" value="{{ old('stock') }}" min="0"
-                   class="w-full bg-slate-800/50 border border-slate-600 rounded-xl pl-12 pr-4 py-3 focus:border-purple-500 focus:outline-none placeholder-slate-400" 
-                   placeholder="Jumlah stok..." required>
-          </div>
-          @error('stock') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
-        </div>
-
         <!-- Status -->
         <div>
           <label class="block text-sm font-medium mb-2">Status</label>

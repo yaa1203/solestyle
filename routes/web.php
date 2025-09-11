@@ -180,9 +180,9 @@ Route::fallback(function () {
     if (auth()->check()) {
         // Jika sudah login tapi halaman tidak ada, ke dashboard
         if (auth()->user()->is_admin) {
-            return redirect()->route('admin.dashboard')->with('error', 'Halaman tidak ditemukan.');
+            return redirect()->route('admin.dashboard');
         }
-        return redirect()->route('dashboard')->with('error', 'Halaman tidak ditemukan.');
+        return redirect()->route('dashboard');
     }
     
     // Jika belum login, paksa ke login

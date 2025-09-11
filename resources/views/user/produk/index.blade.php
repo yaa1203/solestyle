@@ -52,7 +52,8 @@
           </div>
           @endif
           
-          <!-- Ukuran - Update dengan data dari database -->
+          <!-- Ukuran -->
+          @if(isset($availableSizes) && count($availableSizes) > 0)
           <div class="mb-6">
             <h4 class="font-medium mb-3 text-slate-200 flex items-center">
               <i class="fas fa-shoe-prints text-purple-400 mr-2"></i>
@@ -71,6 +72,7 @@
               @endforeach
             </div>
           </div>
+          @endif
           
           <!-- Harga -->
           <div class="mb-6">
@@ -170,6 +172,7 @@
                 </div>
               @endif
               
+              <!-- Status badge berdasarkan total stock dari sizes -->
               @if($product->total_stock <= 5 && $product->total_stock > 0)
                 <span class="absolute top-3 left-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs px-3 py-1 rounded-full font-medium">
                   <i class="fas fa-exclamation-triangle mr-1"></i>Stok Terbatas
@@ -193,17 +196,32 @@
               <h3 class="font-bold text-lg text-white mt-1 mb-1 group-hover:text-purple-300 transition-colors">{{ $product->name }}</h3>
               <p class="text-slate-400 text-sm mb-3">{{ $product->category_name ?? 'Uncategorized' }}</p>
               
-              <!-- Ukuran Tersedia -->
-              @if(count($product->available_sizes) > 0)
+              <!-- Ukuran Tersedia dengan Stok -->
+              @if($product->sizes && count($product->sizes) > 0)
                 <div class="mb-3">
                   <p class="text-xs text-slate-400 mb-1">Ukuran Tersedia:</p>
                   <div class="flex flex-wrap gap-1">
-                    @foreach($product->available_sizes as $size)
-                      <span class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full">
-                        {{ $size }}
-                      </span>
+                    @foreach($product->sizes->where('stock', '>', 0) as $size)
+                      <div class="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full flex items-center gap-1">
+                        <span>{{ $size->size }}</span>
+                        <span class="text-purple-300">({{ $size->stock }})</span>
+                      </div>
                     @endforeach
                   </div>
+                  
+                  <!-- Ukuran yang habis stok -->
+                  @if($product->sizes->where('stock', '=', 0)->count() > 0)
+                    <div class="mt-1">
+                      <p class="text-xs text-slate-500 mb-1">Habis:</p>
+                      <div class="flex flex-wrap gap-1">
+                        @foreach($product->sizes->where('stock', '=', 0) as $size)
+                          <span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full">
+                            {{ $size->size }}
+                          </span>
+                        @endforeach
+                      </div>
+                    </div>
+                  @endif
                 </div>
               @endif
               
@@ -222,7 +240,11 @@
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-bold text-xl">{{ $product->formatted_price ?? 'Rp 0' }}</span>
                 @if($product->total_stock > 0)
                   <span class="text-green-400 text-sm bg-green-400/10 px-2 py-1 rounded-full">
-                    <i class="fas fa-check-circle mr-1"></i>Stok: {{ $product->total_stock }}
+                    <i class="fas fa-check-circle mr-1"></i>Total: {{ $product->total_stock }}
+                  </span>
+                @else
+                  <span class="text-red-400 text-sm bg-red-400/10 px-2 py-1 rounded-full">
+                    <i class="fas fa-times-circle mr-1"></i>Habis
                   </span>
                 @endif
               </div>
@@ -271,15 +293,18 @@
   </div>
 </div>
 @endsection
+
 @section('scripts')
 <script>
 function applyFilters() {
   document.getElementById('filter-form').submit();
 }
+
 function toggleWishlist(productId) {
   // Add wishlist functionality here
   showNotification('Fitur wishlist akan segera tersedia', 'info');
 }
+
 // Toast notification function
 function showNotification(message, type = 'info') {
   const colors = {
@@ -320,6 +345,7 @@ function showNotification(message, type = 'info') {
     }, 300);
   }, 3000);
 }
+
 // Auto submit filter when checkbox/radio changed
 document.addEventListener('change', function(e) {
   if (e.target.matches('input[type="checkbox"], input[type="radio"]')) {

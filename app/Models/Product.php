@@ -69,13 +69,18 @@ class Product extends Model
     public function scopeByStock($query, $stockFilter)
     {
         if ($stockFilter && $stockFilter !== 'Semua Stok') {
+            // Subquery untuk menghitung total stock dari sizes
+            $totalStockSubquery = ProductSize::selectRaw('SUM(stock)')
+                ->whereColumn('product_id', 'products.id');
+            
             switch ($stockFilter) {
                 case 'Stok Tersedia':
-                    return $query->where('stock', '>', 10);
+                    return $query->whereRaw("({$totalStockSubquery->toSql()}) > 10", $totalStockSubquery->getBindings());
                 case 'Stok Rendah':
-                    return $query->where('stock', '>', 0)->where('stock', '<=', 10);
+                    return $query->whereRaw("({$totalStockSubquery->toSql()}) > 0 AND ({$totalStockSubquery->toSql()}) <= 10", 
+                        array_merge($totalStockSubquery->getBindings(), $totalStockSubquery->getBindings()));
                 case 'Habis':
-                    return $query->where('stock', 0);
+                    return $query->whereRaw("({$totalStockSubquery->toSql()}) = 0", $totalStockSubquery->getBindings());
                 default:
                     return $query;
             }
@@ -90,20 +95,18 @@ class Product extends Model
     
     public function scopeInStock($query)
     {
-        return $query->where('stock', '>', 0);
+        // Gunakan total stock dari sizes
+        $totalStockSubquery = ProductSize::selectRaw('SUM(stock)')
+            ->whereColumn('product_id', 'products.id');
+            
+        return $query->whereRaw("({$totalStockSubquery->toSql()}) > 0", $totalStockSubquery->getBindings());
     }
     
     // Accessors & Mutators
     public function getTotalStockAttribute()
     {
-        // Total stok dari produk utama + semua ukuran
-        $totalStock = $this->stock;
-        
-        foreach ($this->sizes as $size) {
-            $totalStock += $size->stock;
-        }
-        
-        return $totalStock;
+        // Total stok dari semua ukuran saja (tidak ditambah dengan stock produk utama)
+        return $this->sizes->sum('stock');
     }
     
     public function getFormattedPriceAttribute()
@@ -210,19 +213,55 @@ class Product extends Model
         return $this->total_stock == 0;
     }
     
-    public function reduceStock($quantity)
+    public function reduceStock($quantity, $size = null)
     {
-        if ($this->stock >= $quantity) {
-            $this->decrement('stock', $quantity);
-            return true;
+        if ($size) {
+            // Kurangi stok dari ukuran tertentu
+            $productSize = $this->sizes()->where('size', $size)->first();
+            if ($productSize && $productSize->stock >= $quantity) {
+                $productSize->decrement('stock', $quantity);
+                $this->updateTotalStock(); // Update total stock
+                return true;
+            }
+        } else {
+            // Kurangi stok dari ukuran yang tersedia (FIFO atau berdasarkan logika lain)
+            $remainingQuantity = $quantity;
+            foreach ($this->sizes()->where('stock', '>', 0)->get() as $size) {
+                if ($remainingQuantity <= 0) break;
+                
+                $deductAmount = min($remainingQuantity, $size->stock);
+                $size->decrement('stock', $deductAmount);
+                $remainingQuantity -= $deductAmount;
+            }
+            
+            if ($remainingQuantity <= 0) {
+                $this->updateTotalStock(); // Update total stock
+                return true;
+            }
         }
         return false;
     }
     
-    public function addStock($quantity)
+    public function addStock($quantity, $size = null)
     {
-        $this->increment('stock', $quantity);
-        return true;
+        if ($size) {
+            // Tambah stok ke ukuran tertentu
+            $productSize = $this->sizes()->where('size', $size)->first();
+            if ($productSize) {
+                $productSize->increment('stock', $quantity);
+                $this->updateTotalStock(); // Update total stock
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    // Method untuk update total stock di field stock produk utama (opsional)
+    public function updateTotalStock()
+    {
+        $totalStock = $this->sizes()->sum('stock');
+        $this->update(['stock' => $totalStock]);
+        return $totalStock;
     }
     
     // Boot method
@@ -245,8 +284,9 @@ class Product extends Model
         });
         
         static::deleting(function ($product) {
-            if ($product->image && Storage::disk('public')->exists($this->image)) {
-                Storage::disk('public')->delete($this->image);
+            // Perbaiki bug: gunakan $product->image bukan $this->image
+            if ($product->image && Storage::disk('public')->exists($product->image)) {
+                Storage::disk('public')->delete($product->image);
             }
         });
     }
