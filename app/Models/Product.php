@@ -32,18 +32,6 @@ class Product extends Model
     {
         return $this->belongsTo(Category::class, 'category_id');
     }
-
-    public function reviews()
-    {
-        return $this->hasManyThrough(
-            Review::class,
-            OrderItem::class,
-            'product_id',     // Foreign key pada order_items table
-            'order_item_id',  // Foreign key pada reviews table
-            'id',            // Local key pada products table
-            'id'             // Local key pada order_items table
-        );
-    }
     
     public function sizes()
     {

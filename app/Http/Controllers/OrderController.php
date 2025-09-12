@@ -44,15 +44,24 @@ class OrderController extends Controller
     /**
      * Display the specified order
      */
+    /**
+     * Display the specified order
+     */
     public function show($id)
     {
         $order = Order::with(['orderItems.product'])
             ->forUser(Auth::id())
             ->findOrFail($id);
         
+        // Untuk COD, status "paid" seharusnya ditampilkan sebagai "pending_payment" 
+        // karena pembayaran dilakukan saat menerima barang
+        if ($order->payment_method === 'cod' && $order->status === 'paid') {
+            $order->status = 'pending_payment';
+        }
+        
         return view('user.orders.show', compact('order'));
     }
-    
+        
     /**
      * Track order by order number
      */
@@ -202,6 +211,14 @@ class OrderController extends Controller
         
         $order = Order::forUser(Auth::id())->findOrFail($id);
         
+        // Untuk COD, tidak perlu upload bukti pembayaran
+        if ($order->payment_method === 'cod') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran COD tidak memerlukan bukti pembayaran'
+            ], 400);
+        }
+        
         if ($order->status !== 'pending_payment') {
             return response()->json([
                 'success' => false,
@@ -334,25 +351,6 @@ class OrderController extends Controller
             ]
         ];
         
-        // Payment step
-        if ($order->payment_method === 'cod') {
-            $timeline[] = [
-                'title' => 'Siap Dikirim',
-                'date' => $order->order_date,
-                'status' => in_array($order->status, ['paid', 'processing', 'shipped', 'delivered']) ? 'completed' : 'current',
-                'icon' => 'fas fa-money-bill-wave',
-                'description' => 'Pesanan COD siap untuk diproses',
-            ];
-        } else {
-            $timeline[] = [
-                'title' => $order->payment_date ? 'Pembayaran Diterima' : 'Menunggu Pembayaran',
-                'date' => $order->payment_date,
-                'status' => $order->payment_date ? 'completed' : ($order->status === 'pending_payment' ? 'current' : 'pending'),
-                'icon' => 'fas fa-credit-card',
-                'description' => $order->payment_date ? 'Pembayaran telah dikonfirmasi' : 'Menunggu konfirmasi pembayaran',
-            ];
-        }
-        
         // Processing step
         $timeline[] = [
             'title' => 'Persiapan Pengiriman',
@@ -368,7 +366,7 @@ class OrderController extends Controller
             'date' => $order->shipped_date,
             'status' => $order->status === 'shipped' ? 'current' : ($order->status === 'delivered' ? 'completed' : 'pending'),
             'icon' => 'fas fa-truck',
-            'description' => $order->shipped_date ? 'Pesanan dalam perjalanan' : 'Belum dikirim',
+            'description' => $order->shipped_date ? 'Pesanan dalam perjalanan' : 'Sedang dikirim',
         ];
         
         // Delivery step

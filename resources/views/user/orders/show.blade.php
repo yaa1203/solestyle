@@ -33,10 +33,16 @@
         <h3 class="text-white font-semibold mb-4">Status Pesanan</h3>
         <div class="flex items-center justify-between">
             <div class="flex flex-col items-center">
-                <div class="w-8 h-8 rounded-full {{ in_array($order->status, ['paid', 'processing', 'shipped', 'delivered']) ? 'bg-green-500' : 'bg-slate-600' }} flex items-center justify-center mb-2">
+                <div class="w-8 h-8 rounded-full 
+                    {{ $order->payment_method === 'cod' 
+                        ? (in_array($order->status, ['processing', 'shipped', 'delivered']) ? 'bg-green-500' : 'bg-slate-600') 
+                        : (in_array($order->status, ['paid', 'processing', 'shipped', 'delivered']) ? 'bg-green-500' : 'bg-slate-600') }} 
+                    flex items-center justify-center mb-2">
                     <i class="fas fa-credit-card text-white text-sm"></i>
                 </div>
-                <span class="text-xs text-slate-400">Dibayar</span>
+                <span class="text-xs text-slate-400">
+                    {{ $order->payment_method === 'cod' ? 'Diproses' : 'Dibayar' }}
+                </span>
             </div>
             <div class="flex-1 h-1 mx-2 {{ in_array($order->status, ['processing', 'shipped', 'delivered']) ? 'bg-green-500' : 'bg-slate-600' }}"></div>
             <div class="flex flex-col items-center">
@@ -151,7 +157,7 @@
     
     <!-- Action Buttons -->
     <div class="flex flex-wrap gap-3 justify-center">
-        @if($order->status === 'pending_payment')
+        @if($order->status === 'pending_payment' && $order->payment_method !== 'cod')
             <button onclick="uploadPaymentProof({{ $order->id }})" 
                     class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-medium">
                 <i class="fas fa-upload mr-2"></i>Upload Bukti Bayar
@@ -174,14 +180,14 @@
         
         @if($order->tracking_number)
             <a href="{{ route('order.track', $order->order_number) }}" 
-               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium">
                 <i class="fas fa-truck mr-2"></i>Lacak Paket
             </a>
         @endif
         
         @if(in_array($order->status, ['paid', 'processing', 'shipped', 'delivered']))
             <a href="{{ route('orders.invoice', $order->id) }}" target="_blank"
-               class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded-lg font-medium">
+            class="bg-slate-600 hover:bg-slate-700 text-white px-6 py-2 rounded-lg font-medium">
                 <i class="fas fa-file-invoice mr-2"></i>Invoice
             </a>
         @endif

@@ -8,6 +8,67 @@ use App\Models\User;
 
 class DashboardController extends Controller
 {
+
+    public function Dashboard()
+    {
+        // Ambil kategori populer (berdasarkan jumlah produk)
+        $popularCategories = Category::withCount('products')
+            ->orderBy('products_count', 'desc')
+            ->take(8)
+            ->get();
+            
+        // Ambil produk terlaris (berdasarkan jumlah penjualan)
+        $bestSellers = Product::with(['sizes', 'category'])
+            ->withCount(['orderItems as sold_count' => function($query) {
+                $query->selectRaw('SUM(quantity) as total_quantity');
+            }])
+            ->orderBy('sold_count', 'desc')
+            ->take(8)
+            ->get();
+            
+        // Transformasi data untuk best sellers
+        $bestSellers->transform(function ($product) {
+            // Format harga
+            $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+            
+            // Data gambar
+            $product->image_exists = !empty($product->image);
+            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            
+            // Data stok
+            $product->total_stock = $product->sizes->sum('stock');
+            
+            return $product;
+        });
+            
+        // Ambil produk terbaru
+        $newArrivals = Product::with(['sizes', 'category'])
+            ->orderBy('created_at', 'desc')
+            ->take(8)
+            ->get();
+            
+        // Transformasi data untuk new arrivals
+        $newArrivals->transform(function ($product) {
+            // Format harga
+            $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+            
+            // Data gambar
+            $product->image_exists = !empty($product->image);
+            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            
+            // Data stok
+            $product->total_stock = $product->sizes->sum('stock');
+            
+            return $product;
+        });
+            
+        return view('user.dashboard', compact(
+            'popularCategories',
+            'bestSellers',
+            'newArrivals'
+        ));
+    }
+
     public function userDashboard()
     {
         // Ambil kategori populer (berdasarkan jumlah produk)
@@ -25,13 +86,43 @@ class DashboardController extends Controller
             ->take(8)
             ->get();
             
+        // Transformasi data untuk best sellers
+        $bestSellers->transform(function ($product) {
+            // Format harga
+            $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+            
+            // Data gambar
+            $product->image_exists = !empty($product->image);
+            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            
+            // Data stok
+            $product->total_stock = $product->sizes->sum('stock');
+            
+            return $product;
+        });
+            
         // Ambil produk terbaru
         $newArrivals = Product::with(['sizes', 'category'])
             ->orderBy('created_at', 'desc')
             ->take(8)
             ->get();
             
-        return view('user.dashboard', compact(
+        // Transformasi data untuk new arrivals
+        $newArrivals->transform(function ($product) {
+            // Format harga
+            $product->formatted_price = 'Rp ' . number_format($product->price, 0, ',', '.');
+            
+            // Data gambar
+            $product->image_exists = !empty($product->image);
+            $product->image_url = $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg');
+            
+            // Data stok
+            $product->total_stock = $product->sizes->sum('stock');
+            
+            return $product;
+        });
+            
+        return view('welcome', compact(
             'popularCategories',
             'bestSellers',
             'newArrivals'
@@ -70,12 +161,11 @@ class DashboardController extends Controller
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
-                    'image_url' => $product->image_url,
-                    'formatted_price' => $product->formatted_price,
-                    'stock' => $product->total_stock,
-                    'stock_color' => $product->stock_badge_class,
+                    'image_url' => $product->image_exists ? asset('storage/' . $product->image) : asset('images/default-product.jpg'),
+                    'formatted_price' => 'Rp ' . number_format($product->price, 0, ',', '.'),
+                    'stock' => $product->sizes->sum('stock'),
+                    'stock_color' => $product->stock > 10 ? 'green' : ($product->stock > 0 ? 'yellow' : 'red'),
                     'sold_count' => $product->sold_count,
-                    'rating' => $product->average_rating
                 ];
             });
         

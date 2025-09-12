@@ -24,43 +24,78 @@ class AdminOrderController extends Controller
         $order = Order::with(['orderItems', 'payment'])->findOrFail($id);
 
         // Timeline sederhana (lebih dinamis bisa dibuat pakai log history)
-        $timeline = [
-            [
-                'title' => 'Pesanan Dibuat',
-                'description' => 'Pesanan telah berhasil dibuat.',
-                'date' => $order->created_at,
-                'status' => $order->status === 'pending_payment' ? 'current' : 'completed',
-                'icon' => 'fas fa-file-alt',
-            ],
-            [
-                'title' => 'Pembayaran',
-                'description' => 'Menunggu pembayaran customer.',
-                'date' => $order->payment_date,
-                'status' => $order->status === 'paid' ? 'current' : ($order->status !== 'pending_payment' ? 'completed' : 'upcoming'),
-                'icon' => 'fas fa-credit-card',
-            ],
-            [
-                'title' => 'Dikemas',
-                'description' => 'Pesanan sedang diproses dan dikemas.',
-                'date' => $order->status === 'processing' ? now() : null,
-                'status' => $order->status === 'processing' ? 'current' : ($order->status === 'shipped' || $order->status === 'delivered' ? 'completed' : 'upcoming'),
-                'icon' => 'fas fa-box',
-            ],
-            [
-                'title' => 'Dikirim',
-                'description' => 'Pesanan telah dikirim ke alamat tujuan.',
-                'date' => $order->tracking_number ? now() : null,
-                'status' => $order->status === 'shipped' ? 'current' : ($order->status === 'delivered' ? 'completed' : 'upcoming'),
-                'icon' => 'fas fa-truck',
-            ],
-            [
-                'title' => 'Selesai',
-                'description' => 'Pesanan telah selesai dan diterima.',
-                'date' => $order->delivered_date,
-                'status' => $order->status === 'delivered' ? 'completed' : 'upcoming',
-                'icon' => 'fas fa-check-circle',
-            ],
-        ];
+        // Untuk COD, skip langkah pembayaran
+        if ($order->payment_method === 'cod') {
+            $timeline = [
+                [
+                    'title' => 'Pesanan Dibuat',
+                    'description' => 'Pesanan COD telah berhasil dibuat.',
+                    'date' => $order->created_at,
+                    'status' => ($order->status === 'pending' || $order->status === 'pending_payment') ? 'current' : 'completed',
+                    'icon' => 'fas fa-file-alt',
+                ],
+                [
+                    'title' => 'Dikemas',
+                    'description' => 'Pesanan sedang diproses dan dikemas.',
+                    'date' => $order->status === 'processing' ? now() : null,
+                    'status' => $order->status === 'processing' ? 'current' : ($order->status === 'shipped' || $order->status === 'delivered' ? 'completed' : 'upcoming'),
+                    'icon' => 'fas fa-box',
+                ],
+                [
+                    'title' => 'Dikirim',
+                    'description' => 'Pesanan telah dikirim ke alamat tujuan.',
+                    'date' => $order->tracking_number ? now() : null,
+                    'status' => $order->status === 'shipped' ? 'current' : ($order->status === 'delivered' ? 'completed' : 'upcoming'),
+                    'icon' => 'fas fa-truck',
+                ],
+                [
+                    'title' => 'Selesai',
+                    'description' => 'Pesanan telah selesai dan diterima. Pembayaran dilakukan saat pengiriman.',
+                    'date' => $order->delivered_date,
+                    'status' => $order->status === 'delivered' ? 'completed' : 'upcoming',
+                    'icon' => 'fas fa-check-circle',
+                ],
+            ];
+        } else {
+            // Timeline untuk non-COD (seperti sebelumnya)
+            $timeline = [
+                [
+                    'title' => 'Pesanan Dibuat',
+                    'description' => 'Pesanan telah berhasil dibuat.',
+                    'date' => $order->created_at,
+                    'status' => $order->status === 'pending_payment' ? 'current' : 'completed',
+                    'icon' => 'fas fa-file-alt',
+                ],
+                [
+                    'title' => 'Pembayaran',
+                    'description' => 'Menunggu pembayaran customer.',
+                    'date' => $order->payment_date,
+                    'status' => $order->status === 'paid' ? 'current' : ($order->status !== 'pending_payment' ? 'completed' : 'upcoming'),
+                    'icon' => 'fas fa-credit-card',
+                ],
+                [
+                    'title' => 'Dikemas',
+                    'description' => 'Pesanan sedang diproses dan dikemas.',
+                    'date' => $order->status === 'processing' ? now() : null,
+                    'status' => $order->status === 'processing' ? 'current' : ($order->status === 'shipped' || $order->status === 'delivered' ? 'completed' : 'upcoming'),
+                    'icon' => 'fas fa-box',
+                ],
+                [
+                    'title' => 'Dikirim',
+                    'description' => 'Pesanan telah dikirim ke alamat tujuan.',
+                    'date' => $order->tracking_number ? now() : null,
+                    'status' => $order->status === 'shipped' ? 'current' : ($order->status === 'delivered' ? 'completed' : 'upcoming'),
+                    'icon' => 'fas fa-truck',
+                ],
+                [
+                    'title' => 'Selesai',
+                    'description' => 'Pesanan telah selesai dan diterima.',
+                    'date' => $order->delivered_date,
+                    'status' => $order->status === 'delivered' ? 'completed' : 'upcoming',
+                    'icon' => 'fas fa-check-circle',
+                ],
+            ];
+        }
 
         return view('admin.order.show', compact('order', 'timeline'));
     }

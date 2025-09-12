@@ -84,6 +84,11 @@ class ProductController extends Controller
      */
     public function store(Request $request)
     {
+        // Generate SKU secara otomatis jika tidak ada atau jika auto-generated
+        if (empty($request->sku) || $request->auto_generated) {
+            $request->merge(['sku' => $this->generateUniqueSKU($request->name)]);
+        }
+        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'sku' => 'required|string|max:255|unique:products',
@@ -145,9 +150,73 @@ class ProductController extends Controller
         
         $product->sizes()->createMany($sizes);
         
-        // PERBAIKAN: Gunakan session()->flash() dan redirect langsung tanpa with()
+        // Gunakan session()->flash() dan redirect langsung tanpa with()
         session()->flash('success', 'Produk berhasil ditambahkan!');
         return redirect()->route('products.index');
+    }
+    
+    /**
+     * Generate unique SKU based on product name
+     */
+    private function generateUniqueSKU($name)
+    {
+        // Split name into words and take first 3 words
+        $words = array_slice(explode(' ', trim($name)), 0, 3);
+        $parts = array_map(function($word) {
+            return strtoupper(substr($word, 0, 3));
+        }, $words);
+        $prefix = implode('-', $parts);
+        
+        // Cari SKU terakhir dengan prefix yang sama
+        $lastSKU = Product::where('sku', 'like', $prefix.'-%')
+            ->orderBy('sku', 'desc')
+            ->value('sku');
+        
+        if ($lastSKU) {
+            // Ekstrak angka dari SKU terakhir
+            $numberPart = explode('-', $lastSKU);
+            $numberPart = end($numberPart); // Ambil bagian terakhir
+            $nextNumber = (int)$numberPart + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        // Format angka dengan 3 digit (001, 002, dst.)
+        $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        
+        // Gabungkan prefix dan angka
+        $newSKU = $prefix . '-' . $formattedNumber;
+        
+        // Pastikan SKU unik (jika ada konflik, cari angka berikutnya)
+        if (Product::where('sku', $newSKU)->exists()) {
+            return $this->findNextAvailableSKU($prefix, $nextNumber);
+        }
+        
+        return $newSKU;
+    }
+
+    /**
+     * Cari SKU berikutnya yang tersedia jika ada konflik
+     */
+    private function findNextAvailableSKU($prefix, $startNumber)
+    {
+        $number = $startNumber;
+        $maxAttempts = 100; // Batasi percobaan untuk menghindari loop tak terbatas
+        
+        while ($number <= $startNumber + $maxAttempts) {
+            $formattedNumber = str_pad($number, 3, '0', STR_PAD_LEFT);
+            $newSKU = $prefix . '-' . $formattedNumber;
+            
+            if (!Product::where('sku', $newSKU)->exists()) {
+                return $newSKU;
+            }
+            
+            $number++;
+        }
+        
+        // Jika tidak menemukan yang unik setelah $maxAttempts, gunakan timestamp
+        $timestamp = time();
+        return $prefix . '-' . $timestamp;
     }
     
     /**
@@ -155,6 +224,11 @@ class ProductController extends Controller
      */
     public function update(Request $request, Product $product)
     {
+        // Generate SKU secara otomatis jika tidak ada atau jika auto-generated
+        if (empty($request->sku) || $request->auto_generated) {
+            $request->merge(['sku' => $this->generateUniqueSKU($request->name)]);
+        }
+        
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'sku' => [
@@ -235,47 +309,9 @@ class ProductController extends Controller
             }
         }
         
-        // PERBAIKAN: Gunakan session()->flash() dan redirect langsung tanpa with()
+        // Gunakan session()->flash() dan redirect langsung tanpa with()
         session()->flash('success', 'Produk berhasil diperbarui!');
         return redirect()->route('products.index');
-    }
-    
-    // Method untuk update stok per ukuran
-    public function updateSizeStock(Request $request, Product $product)
-    {
-        $validator = Validator::make($request->all(), [
-            'sizes' => 'required|array',
-            'sizes.*.id' => 'required|exists:product_sizes,id',
-            'sizes.*.stock' => 'required|integer|min:0'
-        ]);
-        
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data tidak valid!'
-            ], 422);
-        }
-        
-        try {
-            foreach ($request->sizes as $size) {
-                $product->sizes()->where('id', $size['id'])->update([
-                    'stock' => $size['stock']
-                ]);
-            }
-            
-            // Update total stock di produk utama
-            $product->updateTotalStock();
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Stok per ukuran berhasil diperbarui!'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui stok: ' . $e->getMessage()
-            ], 500);
-        }
     }
     
     /**
@@ -446,7 +482,7 @@ class ProductController extends Controller
             }
             $product->delete();
             
-            // PERBAIKAN: Gunakan session()->flash() dan redirect langsung
+            // Gunakan session()->flash() dan redirect langsung
             session()->flash('success', 'Produk berhasil dihapus!');
             return redirect()->route('products.index');
         } catch (\Exception $e) {
@@ -479,7 +515,7 @@ class ProductController extends Controller
             }
             
             $count = count($request->product_ids);
-           // PERBAIKAN: Gunakan session()->flash() dan redirect langsung
+            // Gunakan session()->flash() dan redirect langsung
             session()->flash('success', "{$count} produk berhasil dihapus!");
             return redirect()->route('products.index');
         } catch (\Exception $e) {
@@ -496,7 +532,7 @@ class ProductController extends Controller
             ]);
             $newStatus = $product->status === 'active' ? 'aktif' : 'tidak aktif';
             
-            // PERBAIKAN: Gunakan session()->flash() dan redirect langsung
+            // Gunakan session()->flash() dan redirect langsung
             session()->flash('success', "Status produk berhasil diubah menjadi {$newStatus}!");
             return redirect()->route('products.index');
         } catch (\Exception $e) {

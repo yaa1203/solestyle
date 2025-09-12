@@ -63,10 +63,6 @@
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
         }
         
-        .cart-badge, .wishlist-badge {
-            animation: pulse 1s ease-in-out infinite;
-        }
-        
         .mobile-menu {
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(12px);
@@ -126,7 +122,7 @@
                         <a href="{{ url('kategori') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('kategori*') ? 'active' : '' }}">
                             <i class="fas fa-th-large mr-2"></i>Kategori
                         </a>
-                        <a href="{{ url('contact') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50">
+                        <a href="{{ url('contact') }}" class="nav-link px-4 py-2 rounded-lg hover:bg-slate-700/50 {{ request()->is('contact*') ? 'active' : '' }}">
                             <i class="fas fa-envelope mr-2"></i>Kontak
                         </a>
                     </div>
@@ -176,9 +172,6 @@
                                 </a>
                                 <a href="{{ url('orders') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
                                     <i class="fas fa-box mr-2 text-purple-400"></i>Pesanan
-                                </a>
-                                <a href="{{ url('review') }}" class="block px-4 py-2 rounded-lg hover:bg-slate-700/50 transition-colors">
-                                    <i class="fas fa-box mr-2 text-purple-400"></i>Penilaian
                                 </a>
                                 <hr class="my-2 border-slate-700">
                                 <form method="POST" action="{{ url('logout') }}">

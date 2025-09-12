@@ -24,6 +24,10 @@
     color: #f1f5f9 !important;
     border: 1px solid rgba(148, 163, 184, 0.1) !important;
   }
+  /* Tambahkan di bagian styles */
+  tr {
+    transition: opacity 0.3s ease;
+  }
 </style>
 @endsection
 @section('content')
@@ -262,10 +266,6 @@
                       class="p-2 text-slate-400 hover:text-green-400" title="Toggle Status">
                 <i class="fas fa-toggle-{{ $product->status === 'active' ? 'on' : 'off' }}"></i>
               </button>
-              <button onclick="editSizeStock({{ $product->id }})" 
-                      class="p-2 text-slate-400 hover:text-purple-400" title="Edit Stok per Ukuran">
-                <i class="fas fa-ruler"></i>
-              </button>
               <button onclick="deleteProduct({{ $product->id }}, '{{ $product->name }}')" 
                       class="p-2 text-slate-400 hover:text-red-400" title="Hapus">
                 <i class="fas fa-trash"></i>
@@ -367,117 +367,12 @@
     </div>
   </div>
 </div>
-
-<!-- Modal untuk Edit Stok per Ukuran -->
-<div id="size-stock-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center hidden">
-  <div class="glass-effect rounded-2xl w-full max-w-md mx-4">
-    <div class="p-6 border-b border-slate-700">
-      <h3 class="text-xl font-bold">Edit Stok per Ukuran</h3>
-    </div>
-    
-    <div class="p-6">
-      <div class="mb-4">
-        <label class="block text-sm font-medium mb-2">Produk</label>
-        <input type="text" id="product-name" class="w-full bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3" readonly>
-      </div>
-      
-      <div id="sizes-list" class="space-y-3">
-        <!-- Daftar ukuran akan dimuat di sini -->
-      </div>
-    </div>
-    
-    <div class="p-6 border-t border-slate-700 flex justify-end gap-4">
-      <button onclick="closeSizeStockModal()" class="glass-effect hover:bg-slate-700/50 px-6 py-2 rounded-xl font-semibold">Batal</button>
-      <button onclick="saveSizeStock()" class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 px-6 py-2 rounded-xl font-semibold">Simpan</button>
-    </div>
-  </div>
-</div>
 @endsection
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 let selectedProducts = [];
 let currentProductId = null;
-function editSizeStock(productId) {
-    currentProductId = productId;
-    
-    // Fetch product details including sizes
-    fetch(`/products/${productId}/sizes`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                document.getElementById('product-name').value = data.product.name;
-                
-                // Populate sizes list
-                const sizesList = document.getElementById('sizes-list');
-                sizesList.innerHTML = '';
-                
-                data.product.sizes.forEach(size => {
-                    const sizeDiv = document.createElement('div');
-                    sizeDiv.className = 'flex items-center gap-2';
-                    sizeDiv.innerHTML = `
-                        <span class="w-16 text-sm">${size.size}</span>
-                        <input type="number" id="size-${size.id}" value="${size.stock}" min="0"
-                               class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl px-4 py-3 focus:border-purple-500 focus:outline-none">
-                    `;
-                    sizesList.appendChild(sizeDiv);
-                });
-                
-                // Show modal
-                document.getElementById('size-stock-modal').classList.remove('hidden');
-            } else {
-                Swal.fire('Error', data.message, 'error');
-            }
-        })
-        .catch(error => {
-            Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
-        });
-}
-function closeSizeStockModal() {
-    document.getElementById('size-stock-modal').classList.add('hidden');
-    currentProductId = null;
-}
-function saveSizeStock() {
-    // Collect size data
-    const sizes = [];
-    const sizeInputs = document.querySelectorAll('#sizes-list input');
-    
-    sizeInputs.forEach(input => {
-        const sizeId = input.id.replace('size-', '');
-        const stock = parseInt(input.value);
-        sizes.push({ id: sizeId, stock: stock });
-    });
-    
-    // Send to server
-    fetch(`/products/${currentProductId}/update-size-stock`, {
-        method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-        },
-        body: JSON.stringify({ sizes: sizes })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire('Berhasil', data.message, 'success');
-            location.reload();
-        } else {
-            Swal.fire('Error', data.message, 'error');
-        }
-    })
-    .catch(error => {
-        Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
-    });
-    
-    closeSizeStockModal();
-}
-// Close modal when clicking outside
-document.getElementById('size-stock-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-        closeSizeStockModal();
-    }
-});
 
 // Auto hide alerts
 setTimeout(() => {
@@ -514,7 +409,7 @@ function updateBulkActions() {
     bulkActions.classList.add('hidden');
   }
 }
-// Delete single product
+// Ganti fungsi deleteProduct dengan ini
 function deleteProduct(id, name) {
   Swal.fire({
     title: 'Hapus Produk?',
@@ -527,17 +422,58 @@ function deleteProduct(id, name) {
     cancelButtonText: 'Batal'
   }).then((result) => {
     if (result.isConfirmed) {
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `/products/${id}`;
-      form.innerHTML = `
-        @csrf
-        @method('DELETE')
-      `;
-      document.body.appendChild(form);
-      form.submit();
+      // Gunakan AJAX untuk menghapus produk
+      fetch(`/products/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          Swal.fire('Berhasil', 'Produk berhasil dihapus!', 'success')
+          .then(() => {
+            // Hapus baris dari tabel tanpa reload halaman
+            const row = document.querySelector(`tr[data-product-id="${id}"]`);
+            row.style.opacity = '0';
+            setTimeout(() => row.remove(), 300);
+            
+            // Update pagination jika perlu
+            updatePagination();
+          });
+        } else {
+          Swal.fire('Error', data.message || 'Gagal menghapus produk', 'error');
+        }
+      })
+      .catch(error => {
+        Swal.fire('Error', 'Terjadi kesalahan sistem!', 'error');
+      });
     }
   });
+}
+
+// Tambahkan fungsi updatePagination
+function updatePagination() {
+  const tbody = document.querySelector('tbody');
+  const totalRows = tbody.querySelectorAll('tr:not(.empty-row)').length;
+  
+  if (totalRows === 0) {
+    // Tampilkan pesan tidak ada data
+    if (!document.querySelector('.empty-row')) {
+      const emptyRow = document.createElement('tr');
+      emptyRow.className = 'empty-row';
+      emptyRow.innerHTML = `
+        <td colspan="8" class="py-8 text-center text-slate-400">
+          <i class="fas fa-box-open text-4xl mb-4 block"></i>
+          <p>Tidak ada produk yang ditemukan</p>
+          <p class="text-sm mt-2">Coba ubah filter pencarian Anda</p>
+        </td>
+      `;
+      tbody.appendChild(emptyRow);
+    }
+  }
 }
 // Delete multiple products
 function deleteSelected() {

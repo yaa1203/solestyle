@@ -1,26 +1,10 @@
 @extends('user.layouts.app')
 @section('title', 'Beranda - SoleStyle')
-
 @section('styles')
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
 * {
     font-family: 'Inter', sans-serif;
-}
-
-.animate-float {
-    animation: float 6s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-    animation: float 6s ease-in-out infinite;
-    animation-delay: -3s;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
 }
 
 .gradient-text {
@@ -30,32 +14,26 @@
     -webkit-text-fill-color: transparent;
     animation: gradient-shift 4s ease infinite;
 }
-
 @keyframes gradient-shift {
     0%, 100% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
 }
-
 .glass-effect {
     backdrop-filter: blur(20px);
     background: rgba(15, 23, 42, 0.7);
     border: 1px solid rgba(148, 163, 184, 0.1);
 }
-
 .product-card {
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-
 .product-card:hover {
     transform: translateY(-12px) scale(1.03);
     box-shadow: 0 35px 60px -12px rgba(139, 92, 246, 0.4);
 }
-
 .shine-effect {
     position: relative;
     overflow: hidden;
 }
-
 .shine-effect::before {
     content: '';
     position: absolute;
@@ -66,16 +44,13 @@
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     transition: left 0.6s;
 }
-
 .shine-effect:hover::before {
     left: 100%;
 }
-
 .hero-bg {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 50%, #1e293b 75%, #0f172a 100%);
     position: relative;
 }
-
 .hero-bg::before {
     content: '';
     position: absolute;
@@ -88,7 +63,6 @@
         radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
         radial-gradient(circle at 40% 40%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
 }
-
 .scroll-indicator {
     position: fixed;
     top: 0;
@@ -99,18 +73,15 @@
     z-index: 9999;
     transition: width 0.3s ease;
 }
-
 .parallax-element {
     transform: translateZ(0);
     will-change: transform;
 }
-
 .section-divider {
     height: 100px;
     background: linear-gradient(to right, transparent, rgba(139, 92, 246, 0.1), transparent);
     position: relative;
 }
-
 .section-divider::after {
     content: '';
     position: absolute;
@@ -122,31 +93,33 @@
     background: linear-gradient(90deg, #8b5cf6, #ec4899);
     border-radius: 2px;
 }
-
 .pulse-effect {
-    animation: pulse-glow 2s ease-in-out infinite alternate;
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
 }
-
-@keyframes pulse-glow {
-    from {
-        box-shadow: 0 0 20px rgba(139, 92, 246, 0.5);
-    }
-    to {
-        box-shadow: 0 0 30px rgba(236, 72, 153, 0.8);
-    }
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #8b5cf6;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #7c3aed;
 }
 </style>
 @endsection
-
 @section('content')
 <!-- Scroll Progress Indicator -->
 <div class="scroll-indicator" id="scrollIndicator"></div>
-
 <!-- Hero Section -->
 <div class="hero-bg relative overflow-hidden min-h-screen flex items-center">
-  <!-- Floating Elements -->
-  <div class="absolute top-20 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl animate-float"></div>
-  <div class="absolute bottom-20 right-10 w-48 h-48 bg-pink-500/20 rounded-full blur-xl animate-float-delayed"></div>
+  <!-- Static Background Elements -->
+  <div class="absolute top-20 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl"></div>
+  <div class="absolute bottom-20 right-10 w-48 h-48 bg-pink-500/20 rounded-full blur-xl"></div>
   
   <div class="container mx-auto px-4 py-20 relative z-10">
     <div class="flex flex-col md:flex-row items-center">
@@ -169,7 +142,7 @@
         
         <div class="flex flex-col sm:flex-row gap-6 mb-12">
           <a href="{{ url('produk') }}" class="group bg-gradient-to-r from-purple-600 via-purple-700 to-pink-600 hover:from-purple-700 hover:via-purple-800 hover:to-pink-700 text-white px-10 py-4 rounded-xl font-semibold transition-all transform hover:scale-105 shine-effect flex items-center justify-center text-lg shadow-2xl">
-            <i class="fas fa-shopping-bag mr-3 group-hover:animate-bounce"></i>
+            <i class="fas fa-shopping-bag mr-3"></i>
             Jelajahi Koleksi
           </a>
           <a href="{{ url('kategori') }}" class="glass-effect hover:bg-slate-700/50 text-white px-10 py-4 rounded-xl font-semibold transition-all hover:scale-105 flex items-center justify-center text-lg border border-white/20">
@@ -198,7 +171,7 @@
       <!-- Hero Image Area -->
       <div class="md:w-1/2 relative">
         <div class="relative">
-          <div class="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full blur-3xl animate-pulse"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-purple-500/30 to-pink-500/30 rounded-full blur-3xl opacity-70"></div>
           <div class="glass-effect rounded-3xl p-8 border border-white/10 relative">
             <div class="text-center mb-6">
               <span class="text-purple-400 font-semibold text-lg">Featured Product</span>
@@ -219,17 +192,15 @@
     </div>
   </div>
   
-  <!-- Scroll Down Indicator -->
-  <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
+  <!-- Static Scroll Down Indicator -->
+  <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2">
     <div class="w-6 h-10 border-2 border-purple-400 rounded-full flex justify-center">
-      <div class="w-1 h-3 bg-purple-400 rounded-full mt-2 animate-pulse"></div>
+      <div class="w-1 h-3 bg-purple-400 rounded-full mt-2"></div>
     </div>
   </div>
 </div>
-
 <!-- Section Divider -->
 <div class="section-divider"></div>
-
 <!-- Best Sellers Section -->
 <div class="bg-slate-900 py-20 relative overflow-hidden">
   <!-- Background Elements -->
@@ -308,17 +279,6 @@
             @endif
             <h3 class="font-bold text-lg text-white mt-2 mb-3 group-hover:text-purple-300 transition-colors line-clamp-2">{{ $product->name }}</h3>
             
-            <div class="flex items-center gap-3 mb-4">
-              <div class="text-yellow-400 text-sm">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-              </div>
-              <span class="text-slate-400 text-sm font-medium">({{ $product->average_rating ?? '5.0' }})</span>
-            </div>
-            
             <div class="flex justify-between items-center">
               <span class="text-2xl font-bold gradient-text">{{ $product->formatted_price ?? 'Rp 0' }}</span>
               <span class="text-green-400 text-sm bg-green-400/10 px-3 py-2 rounded-full font-medium border border-green-400/20">
@@ -332,10 +292,8 @@
     </div>
   </div>
 </div>
-
 <!-- Section Divider -->
 <div class="section-divider"></div>
-
 <!-- New Arrivals Section -->
 <div class="bg-slate-900 py-20 relative overflow-hidden">
   <div class="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-cyan-900/10"></div>
@@ -399,17 +357,6 @@
             @endif
             <h3 class="font-bold text-lg text-white mt-2 mb-3 group-hover:text-purple-300 transition-colors line-clamp-2">{{ $product->name }}</h3>
             
-            <div class="flex items-center gap-3 mb-4">
-              <div class="text-yellow-400 text-sm">
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="fas fa-star"></i>
-                <i class="far fa-star"></i>
-              </div>
-              <span class="text-slate-400 text-sm font-medium">({{ $product->average_rating ?? '4.0' }})</span>
-            </div>
-            
             <div class="flex justify-between items-center">
               <span class="text-2xl font-bold gradient-text">{{ $product->formatted_price ?? 'Rp 0' }}</span>
               <span class="text-blue-400 text-sm font-medium">
@@ -423,15 +370,13 @@
     </div>
   </div>
 </div>
-
 <!-- Section Divider -->
 <div class="section-divider"></div>
-
 <!-- Newsletter Section Enhanced -->
 <div class="relative py-20 overflow-hidden">
   <div class="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-slate-900 to-pink-900/30"></div>
-  <div class="absolute top-10 left-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl animate-float"></div>
-  <div class="absolute bottom-10 right-10 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl animate-float-delayed"></div>
+  <div class="absolute top-10 left-10 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"></div>
+  <div class="absolute bottom-10 right-10 w-56 h-56 bg-pink-500/20 rounded-full blur-3xl"></div>
   
   <div class="container mx-auto px-4 relative z-10">
     <div class="max-w-4xl mx-auto text-center">
@@ -477,7 +422,6 @@
   </div>
 </div>
 @endsection
-
 @section('scripts')
 <script>
 // Enhanced toast notification
@@ -524,13 +468,11 @@ function showNotification(message, type = 'info') {
     }, 500);
   }, 4000);
 }
-
 // Scroll progress indicator
 window.addEventListener('scroll', () => {
   const scrolled = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
   document.getElementById('scrollIndicator').style.width = scrolled + '%';
 });
-
 // Parallax effect for floating elements
 window.addEventListener('scroll', () => {
   const scrolled = window.pageYOffset;
@@ -541,13 +483,11 @@ window.addEventListener('scroll', () => {
     element.style.transform = `translateY(${scrolled * speed}px)`;
   });
 });
-
 // Intersection Observer for animations
 const observerOptions = {
   threshold: 0.1,
   rootMargin: '0px 0px -50px 0px'
 };
-
 const observer = new IntersectionObserver((entries) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
@@ -555,7 +495,6 @@ const observer = new IntersectionObserver((entries) => {
     }
   });
 }, observerOptions);
-
 // Observe elements for animation
 document.addEventListener('DOMContentLoaded', () => {
   const animateElements = document.querySelectorAll('.product-card, .glass-effect');

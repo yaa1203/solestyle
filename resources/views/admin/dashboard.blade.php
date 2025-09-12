@@ -26,9 +26,6 @@
             <div class="p-3 bg-purple-500/20 rounded-xl">
                 <i class="fas fa-shopping-bag text-purple-400 text-xl"></i>
             </div>
-            <div class="text-green-400 text-sm font-semibold flex items-center">
-                <i class="fas fa-arrow-up mr-1"></i> +12.5%
-            </div>
         </div>
         <div class="mb-2">
             <div class="text-3xl font-bold">{{ number_format($stats['total_orders']) }}</div>
@@ -43,9 +40,6 @@
         <div class="flex items-center justify-between mb-4">
             <div class="p-3 bg-pink-500/20 rounded-xl">
                 <i class="fas fa-users text-pink-400 text-xl"></i>
-            </div>
-            <div class="text-green-400 text-sm font-semibold flex items-center">
-                <i class="fas fa-arrow-up mr-1"></i> +8.3%
             </div>
         </div>
         <div class="mb-2">
@@ -62,9 +56,6 @@
             <div class="p-3 bg-blue-500/20 rounded-xl">
                 <i class="fas fa-credit-card text-blue-400 text-xl"></i>
             </div>
-            <div class="text-green-400 text-sm font-semibold flex items-center">
-                <i class="fas fa-arrow-up mr-1"></i> +15.2%
-            </div>
         </div>
         <div class="mb-2">
             <div class="text-3xl font-bold">Rp {{ number_format($stats['monthly_revenue'], 0, ',', '.') }}</div>
@@ -80,9 +71,6 @@
             <div class="p-3 bg-green-500/20 rounded-xl">
                 <i class="fas fa-chart-line text-green-400 text-xl"></i>
             </div>
-            <div class="text-red-400 text-sm font-semibold flex items-center">
-                <i class="fas fa-arrow-down mr-1"></i> -3.6%
-            </div>
         </div>
         <div class="mb-2">
             <div class="text-3xl font-bold">{{ number_format($stats['cancellation_rate'], 1) }}%</div>
@@ -91,30 +79,6 @@
         <div class="w-full bg-slate-700 rounded-full h-2">
             <div class="bg-green-600 h-2 rounded-full" style="width: 42%"></div>
         </div>
-    </div>
-</div>
-
-<!-- Charts Section -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <div class="glass-effect rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="font-semibold">Pendapatan Bulanan</h3>
-            <div class="flex items-center gap-2">
-                <button class="px-3 py-1 bg-slate-700 rounded-lg text-xs font-semibold">Bulanan</button>
-                <button class="px-3 py-1 bg-slate-700/50 rounded-lg text-xs font-semibold hover:bg-slate-700">Tahunan</button>
-            </div>
-        </div>
-        <canvas id="revenueChart" height="300"></canvas>
-    </div>
-    
-    <div class="glass-effect rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-6">
-            <h3 class="font-semibold">Kategori Terlaris</h3>
-            <button class="text-slate-400 hover:text-white">
-                <i class="fas fa-ellipsis-h"></i>
-            </button>
-        </div>
-        <canvas id="categoryChart" height="300"></canvas>
     </div>
 </div>
 
@@ -176,9 +140,6 @@
                     <div class="flex-1">
                         <h4 class="font-semibold">{{ $product['name'] }}</h4>
                         <div class="flex items-center gap-2 mt-1">
-                            <div class="text-yellow-400 text-sm">
-                                <i class="fas fa-star"></i> {{ $product['rating'] }}
-                            </div>
                             <div class="text-slate-400 text-sm">• {{ $product['sold_count'] }} terjual</div>
                         </div>
                     </div>
@@ -197,117 +158,11 @@
         </div>
     </div>
 </div>
-
-<!-- Activity Timeline -->
-<div class="glass-effect rounded-2xl p-6 mb-8">
-    <div class="flex items-center justify-between mb-6">
-        <h3 class="font-semibold">Aktivitas Terbaru</h3>
-        <a href="#" class="text-purple-400 text-sm font-semibold">Lihat Semua</a>
-    </div>
-    
-    <div class="space-y-4">
-        @foreach($activities as $activity)
-        <div class="flex gap-4">
-            <div class="flex flex-col items-center">
-                <div class="w-10 h-10 bg-{{ $activity['color'] }}-500/20 rounded-full flex items-center justify-center">
-                    <i class="fas fa-{{ $activity['type'] }} text-{{ $activity['color'] }}-400"></i>
-                </div>
-                @if(!$loop->last)
-                <div class="flex-1 w-1 bg-slate-700 my-1"></div>
-                @endif
-            </div>
-            <div class="flex-1 {{ !$loop->last ? 'pb-4' : '' }}">
-                <div class="font-semibold">{{ $activity['title'] }}</div>
-                <p class="text-slate-400 text-sm">{{ $activity['description'] }}</p>
-                <div class="text-slate-500 text-xs mt-1">{{ $activity['time'] }}</div>
-            </div>
-        </div>
-        @endforeach
-    </div>
-</div>
 @endsection
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Revenue Chart
-const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-const revenueChart = new Chart(revenueCtx, {
-    type: 'line',
-    data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'],
-        datasets: [{
-            label: 'Pendapatan (Juta Rupiah)',
-            data: [45, 52, 38, 45, 59, 62, 69, 71, 82, 76, 68, 74],
-            borderColor: '#9333ea',
-            backgroundColor: 'rgba(147, 51, 234, 0.1)',
-            tension: 0.4,
-            fill: true,
-            pointBackgroundColor: '#9333ea',
-            pointBorderColor: '#fff',
-            pointHoverBackgroundColor: '#fff',
-            pointHoverBorderColor: '#9333ea',
-            pointRadius: 5,
-            pointHoverRadius: 7
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: { 
-            legend: { 
-                display: false,
-                labels: {
-                    color: '#94a3b8'
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { 
-                    color: '#94a3b8',
-                    callback: function(value) {
-                        return 'Rp ' + value + 'Jt';
-                    }
-                }
-            },
-            x: {
-                grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                ticks: { color: '#94a3b8' }
-            }
-        }
-    }
-});
-
-// Category Chart
-const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-const categoryChart = new Chart(categoryCtx, {
-    type: 'doughnut',
-    data: {
-        labels: ['Sneakers', 'Olahraga', 'Boots', 'Formal', 'Lainnya'],
-        datasets: [{
-            data: [35, 25, 15, 10, 15],
-            backgroundColor: ['#9333ea', '#ec4899', '#3b82f6', '#10b981', '#6366f1'],
-            borderWidth: 0,
-            hoverOffset: 15
-        }]
-    },
-    options: {
-        responsive: true,
-        plugins: {
-            legend: {
-                position: 'right',
-                labels: { 
-                    color: '#94a3b8', 
-                    font: { size: 12 },
-                    padding: 15
-                }
-            }
-        },
-        cutout: '70%'
-    }
-});
 
 // Add smooth transitions to dashboard cards
 document.addEventListener('DOMContentLoaded', function() {

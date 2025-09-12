@@ -49,17 +49,6 @@
         
         <p class="text-slate-400 mb-6">{{ $product->category->name }}</p>
         
-        <div class="flex items-center gap-2 mb-6">
-          <div class="text-yellow-400">
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-            <i class="fas fa-star"></i>
-          </div>
-          <span class="text-slate-400">(4.5) 128 ulasan</span>
-        </div>
-        
         <div class="mb-6">
           <span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{{ $product->formatted_price }}</span>
         </div>

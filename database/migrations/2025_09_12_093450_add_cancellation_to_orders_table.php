@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('review_images', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('review_id')->constrained()->onDelete('cascade');
-            $table->string('image_path');
-            $table->timestamps();
+        Schema::table('orders', function (Blueprint $table) {
+            $table->text('cancellation_reason')->nullable();
+            $table->timestamp('cancelled_at')->nullable();
+            $table->string('cancelled_by')->nullable(); // 'admin', 'customer', atau user_id
         });
     }
 
@@ -24,6 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('review_images');
+        Schema::table('orders', function (Blueprint $table) {
+            //
+        });
     }
 };

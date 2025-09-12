@@ -164,20 +164,6 @@
                                     </button>
                                 @endif
                                 
-                                <!-- Review Button - Diperbaiki logikanya -->
-                                @if($order->status === 'delivered')
-                                    @if(!isset($order->has_review) || !$order->has_review)
-                                        <a href="{{ route('review.create', $order->id) }}"
-                                           class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors">
-                                            <i class="fas fa-star"></i>Ulas
-                                        </a>
-                                    @else
-                                        <span class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
-                                            <i class="fas fa-check"></i>Diulas
-                                        </span>
-                                    @endif
-                                @endif
-                                
                                 <!-- Always show reorder button -->
                                 <button onclick="reorder({{ $order->id }})" 
                                         class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors"

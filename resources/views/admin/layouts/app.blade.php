@@ -193,6 +193,13 @@
               @endif
             </a>
           </li>
+          <li>
+            <a href="{{ url('kontak') }}" 
+               class="nav-item {{ request()->routeIs('admin.contacts.*') ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-slate-700/50 group">
+              <i class="fas fa-tags w-5 text-center text-slate-400 group-hover:text-purple-400 transition-colors"></i>
+              <span class="sidebar-text">Kontak</span>
+            </a>
+          </li>
         </ul>
       </div>
     </div>
@@ -661,21 +668,6 @@
       table.querySelector(`th[data-sort="${column}"]`).classList.add(isAsc ? 'sort-asc' : 'sort-desc');
     }
     
-    // Image preview utility
-    window.previewImage = function(input, previewSelector) {
-      const file = input.files[0];
-      const preview = document.querySelector(previewSelector);
-      
-      if (file && preview) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          preview.src = e.target.result;
-          preview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-      }
-    };
-    
     // Currency formatting
     window.formatCurrency = function(amount) {
       return new Intl.NumberFormat('id-ID', {
@@ -705,13 +697,6 @@
           initDataTable(`#${table.id}`);
         });
       }
-      
-      // Initialize image previews
-      document.querySelectorAll('input[type="file"][data-preview]').forEach(input => {
-        input.addEventListener('change', function() {
-          previewImage(this, this.dataset.preview);
-        });
-      });
     });
     
     @yield('scripts')

@@ -14,16 +14,14 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\AdminOrderController;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\ContactController;
 
 // ========================================
 // PUBLIC ROUTES (HANYA WELCOME)
 // ========================================
 
 // HANYA halaman utama yang bisa diakses tanpa login
-Route::get('/', function () {
-    return view('welcome');
-})->name('welcome');
+Route::get('/', [DashboardController::class, 'Dashboard'])->name('welcome');
 
 // ========================================
 // AUTHENTICATION ROUTES (Guest only)
@@ -64,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
     // User bisa lihat kategori setelah login
     Route::get('kategori', [KategoriController::class, 'index'])->name('kategori.index');
     Route::get('/kategori/api', [KategoriController::class, 'api'])->name('kategori.api');
+    // Pastikan route kategori sudah didefinisikan dengan benar
     Route::get('/kategori/{category}', [KategoriController::class, 'show'])->name('kategori.show');
     
     // ===== CART MANAGEMENT =====
@@ -113,10 +112,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'show'])->middleware('auth')->name('profile.show');
     Route::post('/profile', [ProfileController::class, 'update'])->middleware('auth')->name('profile.update');
 
-    Route::get('/review', [ReviewController::class, 'index'])->name('review.index');
-    Route::get('/review/create/{order_item_id}', [ReviewController::class, 'create'])->name('review.create');
-    Route::post('/review', [ReviewController::class, 'store'])->name('review.store');
-    Route::get('/review/{id}', [ReviewController::class, 'show'])->name('review.show');
+    // Route untuk halaman kontak
+    Route::get('/contact', [ContactController::class, 'index'])->name('kontak');
+
+    // Route untuk mengirim pesan kontak
+    Route::post('/contact', [ContactController::class, 'store'])->name('kontak.store');
 });
 
 // ========================================
@@ -132,10 +132,10 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('products', ProductController::class);
     Route::delete('products/destroy-multiple', [ProductController::class, 'destroyMultiple'])->name('products.destroy-multiple');
     Route::patch('products/{product}/toggle-status', [ProductController::class, 'toggleStatus'])->name('products.toggle-status');
+    Route::patch('products/toggle-multiple-status', [ProductController::class, 'toggleMultipleStatus'])->name('products.toggle-multiple-status');
     Route::patch('products/{product}/update-stock', [ProductController::class, 'updateStock'])->name('products.update-stock');
     Route::get('products-export', [ProductController::class, 'export'])->name('products.export');
     Route::get('/products/{product}/sizes', [ProductController::class, 'getProductSizes'])->name('products.get-sizes');
-    Route::patch('/products/{product}/update-size-stock', [ProductController::class, 'updateSizeStock'])->name('products.update-size-stock');
     Route::post('/products/{product}/set-primary-image', [ProductController::class, 'setPrimaryImage'])->name('products.set-primary-image');
     
     // ===== CATEGORY MANAGEMENT (ADMIN) =====
@@ -145,14 +145,18 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('category/export/csv', [CategoryController::class, 'export'])->name('category.export');
     Route::get('category/stats/data', [CategoryController::class, 'getStats'])->name('category.stats');
     
-    // Admin Order Management Routes
-    Route::resource('order', AdminOrderController::class);
-    Route::get('order', [AdminOrderController::class, 'index'])->name('order.index');
-    Route::get('order/{id}', [AdminOrderController::class, 'show'])->name('order.show');
+    // ===== ADMIN ORDER MANAGEMENT =====
+    Route::get('/order', [AdminOrderController::class, 'index'])->name('order.index');
+    Route::get('/order/{id}', [AdminOrderController::class, 'show'])->name('order.show');
+        
+    // Order Actions
+    Route::post('/order/{id}/update-status', [AdminOrderController::class, 'updateStatus'])->name('order.updateStatus');
+    Route::post('/order/{id}/reject-payment', [AdminOrderController::class, 'rejectPayment'])->name('order.rejectPayment');
+    Route::get('/order/{id}/payment-proof', [AdminOrderController::class, 'paymentProof'])->name('order.paymentProof');
 
-    // ✅ route update status harus POST
-    Route::post('order/{id}/update-status', [AdminOrderController::class, 'updateStatus'])
-        ->name('order.updateStatus');
+    Route::get('/kontak', [ContactController::class, 'adminIndex'])->name('admin.contacts.index');
+    Route::get('/kontak/{contact}', [ContactController::class, 'show'])->name('admin.contacts.show');
+    Route::post('/kontak/{contact}/reply', [ContactController::class, 'reply'])->name('admin.contacts.reply');
 });
 
 // ========================================
